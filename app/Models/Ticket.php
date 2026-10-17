@@ -35,8 +35,8 @@ class Ticket extends Model
 
     public function close(): void
     {
-        if ($this->status === TicketStatus::Resolved) {
-            throw new DomainException("Cannot close a resolved ticket.");
+        if ($this->status !== TicketStatus::Resolved) {
+            throw new DomainException("Only resolved tickets can be closed.");
         }
         $this->update(["status" => TicketStatus::Closed]);
     }

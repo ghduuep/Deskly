@@ -2,7 +2,7 @@
 
 namespace App;
 
-enum ArticleStatus: string
+enum KnowledgeArticleStatus: string
 {
     case Draft = "draft";
     case Published = "published";

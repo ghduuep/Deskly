@@ -14,8 +14,10 @@ it("can resolve an open ticket", function () {
     expect($ticket->fresh()->status)->toBe(TicketStatus::Resolved);
 });
 
-it("can close an open ticket", function () {
-    $ticket = Ticket::factory()->create();
+it("can close a resolved ticket", function () {
+    $ticket = Ticket::factory()->create([
+        "status" => TicketStatus::Resolved,
+    ]);
 
     $ticket->close();
 
@@ -23,7 +25,9 @@ it("can close an open ticket", function () {
 });
 
 it("can reopen an closed ticket", function () {
-    $ticket = Ticket::factory()->create();
+    $ticket = Ticket::factory()->create([
+        "status" => TicketStatus::Resolved,
+    ]);
 
     $ticket->close();
 
@@ -59,13 +63,16 @@ it("should not resolve a closed ticket", function () {
     expect(fn() => $ticket->resolve())->toThrow(DomainException::class);
 });
 
-it("should not close a resolved ticket", function () {
+it("should not close a non resolved ticket", function (TicketStatus $status) {
     $ticket = Ticket::factory()->create([
-        "status" => TicketStatus::Resolved,
+        "status" => $status,
     ]);
 
     expect(fn() => $ticket->close())->toThrow(DomainException::class);
-});
+})->with([
+    "Open tickets cannot be closed" => [TicketStatus::Open],
+    "Pending tickets cannot be closed" => [TicketStatus::Pending],
+]);
 
 it("should not reopen a pending ticket", function () {
     $ticket = Ticket::factory()->create([
