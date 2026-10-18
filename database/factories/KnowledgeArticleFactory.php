@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\ArticleStatus;
 use App\KnowledgeArticleStatus;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeCategory;

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\ArticleStatus;
 use App\KnowledgeArticleStatus;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
