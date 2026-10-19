@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\DomainCast;
+use App\ValueObjects\Domain;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,12 +14,19 @@ class Company extends Model
 {
     use HasFactory;
 
+    protected function casts(): array
+    {
+        return [
+            "domain" => DomainCast::class,
+        ];
+    }
+
     public function changeName(string $name): void
     {
         $this->update(["name" => $name]);
     }
 
-    public function changeDomain(string $domain): void
+    public function changeDomain(Domain $domain): void
     {
         $this->update(["domain" => $domain]);
     }

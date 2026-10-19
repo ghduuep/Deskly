@@ -2,8 +2,15 @@
 
 namespace App\Models;
 
+use App\Casts\EmailAddressCast;
+use App\Casts\PhoneNumberCast;
 use App\Models\Concerns\HasTags;
+<<<<<<< Updated upstream
 use DomainException;
+=======
+use App\ValueObjects\EmailAddress;
+use App\ValueObjects\PhoneNumber;
+>>>>>>> Stashed changes
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,12 +22,20 @@ class Contact extends Model
 {
     use HasTags, HasFactory;
 
-    public function changeEmail(string $email): void
+    protected function casts(): array
+    {
+        return [
+            "email" => EmailAddressCast::class,
+            "phone" => PhoneNumberCast::class,
+        ];
+    }
+
+    public function changeEmail(EmailAddress $email): void
     {
         $this->update(["email" => $email]);
     }
 
-    public function changePhone(string $phone): void
+    public function changePhone(PhoneNumber $phone): void
     {
         $this->update(["phone" => $phone]);
     }

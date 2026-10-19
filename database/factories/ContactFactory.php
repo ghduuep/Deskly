@@ -24,7 +24,7 @@ class ContactFactory extends Factory
             "company_id" => Company::factory(),
             "name" => fake()->name(),
             "email" => fake()->email(),
-            "phone" => fake()->phoneNumber(),
+            "phone" => fake()->e164PhoneNumber(),
         ];
     }
 }

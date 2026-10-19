@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\SlugCast;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,13 @@ class KnowledgeCategory extends Model
 {
     use HasFactory;
 
+    protected function casts(): array
+    {
+        return [
+            "slug" => SlugCast::class,
+        ];
+    }
+
     public function moveTo(KnowledgeCategory $parent): void
     {
         if ($this->is($parent)) {
@@ -21,7 +29,9 @@ class KnowledgeCategory extends Model
         }
 
         if ($parent->isDescendantOf($this)) {
-            throw new DomainException("A category cannot be moved under its descendant.");
+            throw new DomainException(
+                "A category cannot be moved under its descendant.",
+            );
         }
 
         $this->parent()->associate($parent);
@@ -67,7 +77,9 @@ class KnowledgeCategory extends Model
     public function remove(): void
     {
         if (!$this->canBeDeleted()) {
-            throw new DomainException("Cannot delete a category containing articles or subcategories.");
+            throw new DomainException(
+                "Cannot delete a category containing articles or subcategories.",
+            );
         }
 
         $this->delete();

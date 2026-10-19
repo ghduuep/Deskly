@@ -2,7 +2,11 @@
 
 namespace App\Models;
 
+<<<<<<< Updated upstream
 use App\ArticleStatus;
+=======
+use App\Casts\SlugCast;
+>>>>>>> Stashed changes
 use App\KnowledgeArticleStatus;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -30,6 +34,7 @@ class KnowledgeArticle extends Model
         return [
             "status" => KnowledgeArticleStatus::class,
             "published_at" => "datetime",
+            "slug" => SlugCast::class,
         ];
     }
 
@@ -38,15 +43,23 @@ class KnowledgeArticle extends Model
         if ($this->status !== KnowledgeArticleStatus::Draft) {
             throw new DomainException("Only draft articles can be published.");
         }
-        $this->update(["status" => KnowledgeArticleStatus::Published, "published_at" => now(),]);
+        $this->update([
+            "status" => KnowledgeArticleStatus::Published,
+            "published_at" => now(),
+        ]);
     }
 
     public function unpublish(): void
     {
         if ($this->status !== KnowledgeArticleStatus::Published) {
-            throw new DomainException("Only published articles can be unpublished.");
+            throw new DomainException(
+                "Only published articles can be unpublished.",
+            );
         }
-        $this->update(["status" => KnowledgeArticleStatus::Draft, "published_at" => null]);
+        $this->update([
+            "status" => KnowledgeArticleStatus::Draft,
+            "published_at" => null,
+        ]);
     }
 
     public function archive(): void
@@ -57,7 +70,9 @@ class KnowledgeArticle extends Model
     public function restore(): void
     {
         if ($this->status !== KnowledgeArticleStatus::Archived) {
-            throw new DomainException("Only archived articles can be restored.");
+            throw new DomainException(
+                "Only archived articles can be restored.",
+            );
         }
         $this->update(["status" => KnowledgeArticleStatus::Draft]);
     }

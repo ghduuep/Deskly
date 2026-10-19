@@ -2,13 +2,19 @@
 
 use App\Models\Company;
 use App\Models\Contact;
+use App\ValueObjects\Domain;
 
 it("should change company's domain", function () {
     $company = Company::factory()->create();
 
-    $company->changeDomain("titantelecom.com.br");
+    $company->changeDomain(new Domain("titantelecom.com.br"));
 
-    expect($company->fresh()->domain)->toBe("titantelecom.com.br");
+    $domain = $company->fresh()->domain;
+
+    expect($domain)
+        ->toBeInstanceOf(Domain::class)
+        ->and($domain->value)
+        ->toBe("titantelecom.com.br");
 });
 
 it("should change company's name", function () {
