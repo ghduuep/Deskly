@@ -23,11 +23,17 @@ class Company extends Model
 
     public function changeName(string $name): void
     {
+        if ($this->name === $name) {
+            return;
+        }
         $this->update(["name" => $name]);
     }
 
     public function changeDomain(Domain $domain): void
     {
+        if ($this->domain->equals($domain)) {
+            return;
+        }
         $this->update(["domain" => $domain]);
     }
 

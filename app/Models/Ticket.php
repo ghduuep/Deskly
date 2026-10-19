@@ -33,6 +33,10 @@ class Ticket extends Model
     }
     public function resolve(): void
     {
+        if ($this->status === TicketStatus::Resolved) {
+            return;
+        }
+
         if ($this->status === TicketStatus::Closed) {
             throw new DomainException("Cannot resolve a closed ticket.");
         }
@@ -43,6 +47,10 @@ class Ticket extends Model
 
     public function close(): void
     {
+        if ($this->status === TicketStatus::Closed) {
+            return;
+        }
+
         if ($this->status !== TicketStatus::Resolved) {
             throw new DomainException("Only resolved tickets can be closed.");
         }
@@ -53,6 +61,10 @@ class Ticket extends Model
 
     public function reopen(): void
     {
+        if ($this->status === TicketStatus::Open) {
+            return;
+        }
+
         if (
             !in_array(
                 $this->status,
@@ -69,6 +81,10 @@ class Ticket extends Model
 
     public function changePriority(TicketPriority $priority): void
     {
+        if ($this->priority === $priority) {
+            return;
+        }
+
         $previousPriority = $this->priority;
 
         $this->update(["priority" => $priority]);
@@ -82,6 +98,10 @@ class Ticket extends Model
 
     public function assignTo(User $user): void
     {
+        if ($this->assigned_id === $user->id)) {
+            return;
+        }
+
         if (!$user->canBeAssignedTickets()) {
             throw new DomainException("This user cannot be assigned tickets.");
         }

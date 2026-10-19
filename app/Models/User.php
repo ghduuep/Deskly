@@ -36,6 +36,10 @@ class User extends Authenticatable
 
     public function changeRole(UserRole $role): void
     {
+        if ($this->role === $role) {
+            return;
+        }
+
         $this->update(["role" => $role]);
     }
 

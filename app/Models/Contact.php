@@ -28,16 +28,26 @@ class Contact extends Model
 
     public function changeEmail(EmailAddress $email): void
     {
+        if ($this->email->equals($email)) {
+            return;
+        }
+
         $this->update(["email" => $email]);
     }
 
     public function changePhone(PhoneNumber $phone): void
     {
+        if ($this->phone->equals($phone)) {
+            return;
+        }
         $this->update(["phone" => $phone]);
     }
 
     public function assignToCompany(Company $company): void
     {
+        if ($this->company_id === $company->id) {
+            return;
+        }
         $this->update(["company_id" => $company->id]);
     }
 

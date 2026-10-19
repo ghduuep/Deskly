@@ -36,6 +36,10 @@ class KnowledgeArticle extends Model
 
     public function publish(): void
     {
+        if ($this->status === KnowledgeArticleStatus::Published) {
+            return;
+        }
+
         if ($this->status !== KnowledgeArticleStatus::Draft) {
             throw new DomainException("Only draft articles can be published.");
         }
@@ -47,6 +51,15 @@ class KnowledgeArticle extends Model
 
     public function unpublish(): void
     {
+        if (
+            in_array($this->status, [
+                KnowledgeArticleStatus::Draft,
+                KnowledgeArticleStatus::Archived,
+            ])
+        ) {
+            return;
+        }
+
         if ($this->status !== KnowledgeArticleStatus::Published) {
             throw new DomainException(
                 "Only published articles can be unpublished.",
@@ -60,11 +73,22 @@ class KnowledgeArticle extends Model
 
     public function archive(): void
     {
+        if ($this->status === KnowledgeArticleStatus::Archived) {
+            return;
+        }
         $this->update(["status" => KnowledgeArticleStatus::Archived]);
     }
 
     public function restore(): void
     {
+        if (
+            in_array($this->status, [
+                KnowledgeArticleStatus::Published,
+                KnowledgeArticleStatus::Draft,
+            ])
+        ) {
+            return;
+        }
         if ($this->status !== KnowledgeArticleStatus::Archived) {
             throw new DomainException(
                 "Only archived articles can be restored.",
