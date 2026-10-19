@@ -98,7 +98,7 @@ class Ticket extends Model
 
     public function assignTo(User $user): void
     {
-        if ($this->assigned_id === $user->id)) {
+        if ($this->assigned_id === $user->id) {
             return;
         }
 

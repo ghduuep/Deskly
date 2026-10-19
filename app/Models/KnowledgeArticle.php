@@ -51,12 +51,7 @@ class KnowledgeArticle extends Model
 
     public function unpublish(): void
     {
-        if (
-            in_array($this->status, [
-                KnowledgeArticleStatus::Draft,
-                KnowledgeArticleStatus::Archived,
-            ])
-        ) {
+        if ($this->status === KnowledgeArticleStatus::Draft) {
             return;
         }
 
@@ -81,14 +76,6 @@ class KnowledgeArticle extends Model
 
     public function restore(): void
     {
-        if (
-            in_array($this->status, [
-                KnowledgeArticleStatus::Published,
-                KnowledgeArticleStatus::Draft,
-            ])
-        ) {
-            return;
-        }
         if ($this->status !== KnowledgeArticleStatus::Archived) {
             throw new DomainException(
                 "Only archived articles can be restored.",
@@ -104,6 +91,10 @@ class KnowledgeArticle extends Model
 
     public function assignToCategory(KnowledgeCategory $category): void
     {
+        if ($this->knowledge_category_id === $category->id) {
+            return;
+        }
+
         $this->category()->associate($category);
         $this->save();
     }

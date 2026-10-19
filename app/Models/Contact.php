@@ -28,7 +28,7 @@ class Contact extends Model
 
     public function changeEmail(EmailAddress $email): void
     {
-        if ($this->email->equals($email)) {
+        if ($this->email?->equals($email) === true) {
             return;
         }
 
@@ -37,7 +37,7 @@ class Contact extends Model
 
     public function changePhone(PhoneNumber $phone): void
     {
-        if ($this->phone->equals($phone)) {
+        if ($this->phone?->equals($phone) === true) {
             return;
         }
         $this->update(["phone" => $phone]);
