@@ -3,11 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Ticket\StoreTicketRequest;
-use App\Http\Requests\Ticket\UpdateTicketRequest;
 use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
 use App\TicketStatus;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +22,7 @@ class TicketController extends Controller
         return TicketResource::collection($tickets);
     }
 
-    public function store(StoreTicketRequest $request): TicketResource
+    public function store(StoreTicketRequest $request): JsonResponse
     {
         $ticket = Ticket::create([
             ...$request->validated(),

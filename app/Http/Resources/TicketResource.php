@@ -23,8 +23,8 @@ class TicketResource extends JsonResource
             "assignee" => $this->whenLoaded("assignee"),
             "company" => $this->whenLoaded("company"),
             "tags" => $this->whenLoaded("tags"),
-            "created_at" => $this->created_at?->toISOstring(),
-            "updated_at" => $this->updated?->toISOstring(),
+            "created_at" => $this->created_at?->toISOString(),
+            "updated_at" => $this->updated_at?->toISOString(),
         ];
     }
 }
