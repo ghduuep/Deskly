@@ -5,12 +5,8 @@ namespace App\Models;
 use App\Casts\EmailAddressCast;
 use App\Casts\PhoneNumberCast;
 use App\Models\Concerns\HasTags;
-<<<<<<< Updated upstream
-use DomainException;
-=======
 use App\ValueObjects\EmailAddress;
 use App\ValueObjects\PhoneNumber;
->>>>>>> Stashed changes
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

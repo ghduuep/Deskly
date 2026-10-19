@@ -2,11 +2,7 @@
 
 namespace App\Models;
 
-<<<<<<< Updated upstream
-use App\ArticleStatus;
-=======
 use App\Casts\SlugCast;
->>>>>>> Stashed changes
 use App\KnowledgeArticleStatus;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
