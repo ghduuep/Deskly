@@ -16,7 +16,7 @@ return new class extends Migration {
                 ->foreignId("ticket_id")
                 ->constrained("tickets")
                 ->cascadeOnDelete();
-            $table->foreignId("user_id")->constrained("users");
+            $table->foreignId("contact_id")->constrained("contacts");
             $table->longText("content");
             $table->boolean("is_internal")->default(false);
             $table->timestamps();

@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Contact;
+use App\Models\Message;
 use App\Models\Ticket;
 use App\Models\User;
 use App\TicketPriority;
@@ -53,6 +55,17 @@ it("can assign a ticket to an agent", function () {
     $ticket->assignTo($user);
 
     expect($ticket->fresh()->assigned_id)->toBe($user->id);
+});
+
+it("can add a message to an existing ticket", function () {
+    $ticket = Ticket::factory()->create();
+    $contact = Contact::factory()->create();
+
+    $message = $ticket->addMessage($contact, "Hello I need help", false);
+
+    expect($ticket->fresh()->messages)->toHaveCount(1);
+    expect($message->author->is($contact))->toBeTrue();
+    expect($message->ticket->is($ticket))->toBeTrue();
 });
 
 it("should not resolve a closed ticket", function () {

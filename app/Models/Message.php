@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(["content", "is_internal"])]
+#[Fillable(["content", "is_internal", "ticket_id", "contact_id"])]
 class Message extends Model
 {
+    use HasFactory;
+
     protected function casts(): array
     {
         return [
@@ -25,8 +28,8 @@ class Message extends Model
         return $this->belongsTo(Ticket::class);
     }
 
-    public function user(): BelongsTo
+    public function author(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Contact::class, "contact_id");
     }
 }

@@ -2,6 +2,12 @@
 
 namespace App\Models;
 
+use App\Events\MessageSent;
+use App\Events\TicketAssigned;
+use App\Events\TicketClosed;
+use App\Events\TicketPriorityChanged;
+use App\Events\TicketReopened;
+use App\Events\TicketResolved;
 use App\Models\Concerns\HasTags;
 use App\TicketPriority;
 use App\TicketStatus;
@@ -31,6 +37,8 @@ class Ticket extends Model
             throw new DomainException("Cannot resolve a closed ticket.");
         }
         $this->update(["status" => TicketStatus::Resolved]);
+
+        TicketResolved::dispatch(ticketId: $this->id);
     }
 
     public function close(): void
@@ -39,6 +47,8 @@ class Ticket extends Model
             throw new DomainException("Only resolved tickets can be closed.");
         }
         $this->update(["status" => TicketStatus::Closed]);
+
+        TicketClosed::dispatch(ticketId: $this->id);
     }
 
     public function reopen(): void
@@ -53,11 +63,21 @@ class Ticket extends Model
             throw new DomainException("This ticket cannot be reopened.");
         }
         $this->update(["status" => TicketStatus::Open]);
+
+        TicketReopened::dispatch(ticketId: $this->id);
     }
 
     public function changePriority(TicketPriority $priority): void
     {
+        $previousPriority = $this->priority;
+
         $this->update(["priority" => $priority]);
+
+        TicketPriorityChanged::dispatch(
+            $this->id,
+            $previousPriority,
+            $priority,
+        );
     }
 
     public function assignTo(User $user): void
@@ -66,6 +86,24 @@ class Ticket extends Model
             throw new DomainException("This user cannot be assigned tickets.");
         }
         $this->update(["assigned_id" => $user->id]);
+
+        TicketAssigned::dispatch($this->id, $user->id);
+    }
+
+    public function addMessage(
+        Contact $author,
+        string $content,
+        bool $isInternal = false,
+    ): Message {
+        $message = $this->messages()->create([
+            "contact_id" => $author->id,
+            "content" => $content,
+            "is_internal" => $isInternal,
+        ]);
+
+        MessageSent::dispatch($message->id, $this->id);
+
+        return $message;
     }
 
     public function requester(): BelongsTo
