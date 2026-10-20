@@ -16,7 +16,7 @@ class StoreTicketRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create', Ticket::class);
+        return $this->user()->can("create", Ticket::class);
     }
 
     /**
@@ -30,8 +30,12 @@ class StoreTicketRequest extends FormRequest
 
         return [
             "title" => ["required", "string", "max:255"],
-            "contact_id" => [Rule::requiredIf(!$isCustomer), Rule::prohibitedIf($isCustomer), "integer", Rule::exists("contacts", "id")],
-            "priority" => ["sometimes", Rule::enum(TicketPriority::class)],
+            "contact_id" => [
+                Rule::requiredIf(!$isCustomer),
+                Rule::prohibitedIf($isCustomer),
+                "integer",
+                Rule::exists("contacts", "id"),
+            ],
         ];
     }
 }

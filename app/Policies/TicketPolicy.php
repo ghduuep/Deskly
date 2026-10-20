@@ -21,8 +21,14 @@ class TicketPolicy
      */
     public function view(User $user, Ticket $ticket): bool
     {
-        return $ticket->requester?->is($user->contact) === true ||
-            $user->canBeAssignedTickets();
+        if (
+            $ticket->requester?->is($user->contact()) ||
+            $user->canBeAssignedTickets()
+        ) {
+            return Response::allow();
+        }
+
+        return Response::denyAsNotFound();
     }
 
     /**
