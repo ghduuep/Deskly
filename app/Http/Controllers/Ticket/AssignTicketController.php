@@ -5,21 +5,26 @@ namespace App\Http\Controllers\Ticket;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
+use App\Http\Requests\Ticket\AssignTicketRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 
 class AssignTicketController extends Controller
 {
     /**
      * Handle the incoming request.
      */
-    public function __invoke(Ticket $ticket, User $user): TicketResource
-    {
-        Gate::authorize("assign", $ticket);
+    public function __invoke(
+        AssignTicketRequest $request,
+        Ticket $ticket,
+    ): TicketResource {
+        $data = $request->validated();
 
-        $ticket->assignTo($user);
+        $assignee = User::findOrFail($data["assigned_id"]);
 
-        return new TicketResource($ticket->refresh());
+        $ticket->assignTo($assignee);
+
+        return new TicketResource(
+            $ticket->refresh()->load(["requester", "assignee"]),
+        );
     }
 }

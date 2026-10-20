@@ -43,7 +43,9 @@ class TicketController extends Controller
 
         $data = $request->validated();
 
-        $data["contact_id"] = $user->contact()->firstOrFail()->id;
+        if ($user->role === UserRole::Customer) {
+            $data["contact_id"] = $user->contact()->firstOrFail()->id;
+        }
 
         $ticket = Ticket::create([
             ...$data,

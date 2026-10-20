@@ -19,7 +19,7 @@ class TicketPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Ticket $ticket): bool
+    public function view(User $user, Ticket $ticket): Response
     {
         if (
             $ticket->requester?->is($user->contact()) ||
@@ -47,7 +47,22 @@ class TicketPolicy
         return $user->canBeAssignedTickets();
     }
 
+    public function resolve(User $user, Ticket $ticket): bool
+    {
+        return $user->canBeAssignedTickets();
+    }
+
     public function close(User $user, Ticket $ticket): bool
+    {
+        return $user->canBeAssignedTickets();
+    }
+
+    public function reopen(User $user, Ticket $ticket): bool
+    {
+        return $user->canBeAssignedTickets();
+    }
+
+    public function changePriority(User $user, Ticket $ticket): bool
     {
         return $user->canBeAssignedTickets();
     }
@@ -55,29 +70,5 @@ class TicketPolicy
     public function addMessage(User $user, Ticket $ticket): bool
     {
         return $this->view($user, $ticket);
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, Ticket $ticket): bool
-    {
-        return $user->canBeAssignedTickets();
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Ticket $ticket): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Ticket $ticket): bool
-    {
-        return false;
     }
 }
