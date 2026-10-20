@@ -13,6 +13,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Represents a person who can participate in support interactions.
+ *
+ * Contacts may originate from external communication channels
+ * and do not required an associated authenticated user.
+ */
 #[Fillable(["user_id", "company_id", "name", "email", "phone"])]
 class Contact extends Model
 {

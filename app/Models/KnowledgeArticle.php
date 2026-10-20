@@ -34,6 +34,13 @@ class KnowledgeArticle extends Model
         ];
     }
 
+    /**
+     * Publishes a draft article and records the publication timestamp.
+     *
+     * Does nothing if the article is already published.
+     *
+     * @throws DomainException If the article is not a draft.
+     */
     public function publish(): void
     {
         if ($this->status === KnowledgeArticleStatus::Published) {
@@ -49,6 +56,13 @@ class KnowledgeArticle extends Model
         ]);
     }
 
+    /**
+     * Unpublish a published article.
+     *
+     * Does nothing if the article is already a draft.
+     *
+     * @throws DomainException If the article is not published.
+     */
     public function unpublish(): void
     {
         if ($this->status === KnowledgeArticleStatus::Draft) {
@@ -66,6 +80,11 @@ class KnowledgeArticle extends Model
         ]);
     }
 
+    /**
+     * Archives the article regardless of its current status.
+     *
+     * Does nothing if the article is already archived.
+     */
     public function archive(): void
     {
         if ($this->status === KnowledgeArticleStatus::Archived) {
@@ -74,6 +93,11 @@ class KnowledgeArticle extends Model
         $this->update(["status" => KnowledgeArticleStatus::Archived]);
     }
 
+    /**
+     * Restores an archived article to draft status.
+     *
+     * @throws DomainException If the article is not archived.
+     */
     public function restore(): void
     {
         if ($this->status !== KnowledgeArticleStatus::Archived) {
@@ -89,6 +113,11 @@ class KnowledgeArticle extends Model
         return $this->status === KnowledgeArticleStatus::Published;
     }
 
+    /**
+     * Assigns a category to the article.
+     *
+     * Does nothing if the category is already assigned.
+     */
     public function assignToCategory(KnowledgeCategory $category): void
     {
         if ($this->knowledge_category_id === $category->id) {

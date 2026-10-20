@@ -21,7 +21,13 @@ class KnowledgeCategory extends Model
             "slug" => SlugCast::class,
         ];
     }
-
+    /**
+     * Moves the category beneath another category.
+     *
+     * Prevents self-parenting and circular hierarchies.
+     *
+     * @throws DomainException If the move would create a cycle.
+     */
     public function moveTo(KnowledgeCategory $parent): void
     {
         if ($this->is($parent)) {
@@ -38,6 +44,11 @@ class KnowledgeCategory extends Model
         $this->save();
     }
 
+    /**
+     * Determines whether this category is a descendant of another category.
+     *
+     * Traverses the parent hierarchy to check both direct and indirect ancestors.
+     */
     public function isDescendantOf(KnowledgeCategory $category): bool
     {
         $parent = $this->parent;
@@ -74,6 +85,11 @@ class KnowledgeCategory extends Model
         return !$this->articles()->exists() && !$this->children()->exists();
     }
 
+    /**
+     * Deletes the category if it has no articles or subcategories.
+     *
+     * @throws DomainException If the category is not empty.
+     */
     public function remove(): void
     {
         if (!$this->canBeDeleted()) {

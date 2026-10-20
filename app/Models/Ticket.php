@@ -31,6 +31,13 @@ class Ticket extends Model
             "priority" => TicketPriority::class,
         ];
     }
+    /**
+     * Marks the ticket as resolved.
+     *
+     * Does nothing if the ticket is already resolved.
+     *
+     * @throws DomainException If the ticket is closed.
+     */
     public function resolve(): void
     {
         if ($this->status === TicketStatus::Resolved) {
@@ -45,6 +52,13 @@ class Ticket extends Model
         TicketResolved::dispatch(ticketId: $this->id);
     }
 
+    /**
+     * Closes a resolved ticket.
+     *
+     * Does nothing if the ticket is already closed.
+     *
+     * @throws DomainException If the ticket is not resolved.
+     */
     public function close(): void
     {
         if ($this->status === TicketStatus::Closed) {
@@ -59,6 +73,13 @@ class Ticket extends Model
         TicketClosed::dispatch(ticketId: $this->id);
     }
 
+    /**
+     * Reopens a resolved or closed ticket.
+     *
+     * Does nothing if the ticket is already open.
+     *
+     * @throws DomainException If the ticket cannot be reopened.
+     */
     public function reopen(): void
     {
         if ($this->status === TicketStatus::Open) {
@@ -79,6 +100,11 @@ class Ticket extends Model
         TicketReopened::dispatch(ticketId: $this->id);
     }
 
+    /**
+     * Changes ticket priority.
+     *
+     * Does nothing if the desired priority is the currently priority.private
+     */
     public function changePriority(TicketPriority $priority): void
     {
         if ($this->priority === $priority) {
@@ -96,6 +122,13 @@ class Ticket extends Model
         );
     }
 
+    /**
+     * Assigns the ticket to an agent or administrator.
+     *
+     * Does nothing if the user is already assigned.
+     *
+     * @throws DomainException If the user cannot be assigned tickets.
+     */
     public function assignTo(User $user): void
     {
         if ($this->assigned_id === $user->id) {
@@ -110,6 +143,11 @@ class Ticket extends Model
         TicketAssigned::dispatch($this->id, $user->id);
     }
 
+    /**
+     * Adds a message to the ticket.
+     *
+     * Internal messages are intended for staff-only communication.
+     */
     public function addMessage(
         Contact $author,
         string $content,
