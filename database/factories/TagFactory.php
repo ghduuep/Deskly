@@ -18,8 +18,8 @@ class TagFactory extends Factory
     public function definition(): array
     {
         return [
-            "name" => fake()->unique()->words(2, true),
-            "color" => fake()->hexColor(),
+            'name' => fake()->unique()->words(2, true),
+            'color' => fake()->hexColor(),
         ];
     }
 }

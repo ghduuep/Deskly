@@ -23,11 +23,11 @@ final readonly class Slug
     public function __construct(string $value)
     {
         if (
-            $value === "" ||
+            $value === '' ||
             strlen($value) > 255 ||
-            preg_match("/^[a-z0-9]+(?:-[a-z0-9]+)*$/D", $value) !== 1
+            preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', $value) !== 1
         ) {
-            throw new InvalidArgumentException("Invalid slug.");
+            throw new InvalidArgumentException('Invalid slug.');
         }
 
         $this->value = $value;

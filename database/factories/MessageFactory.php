@@ -20,10 +20,10 @@ class MessageFactory extends Factory
     public function definition(): array
     {
         return [
-            "ticket_id" => Ticket::factory(),
-            "contact_id" => Contact::factory(),
-            "content" => fake()->sentence(),
-            "is_internal" => false,
+            'ticket_id' => Ticket::factory(),
+            'contact_id' => Contact::factory(),
+            'content' => fake()->sentence(),
+            'is_internal' => false,
         ];
     }
 }

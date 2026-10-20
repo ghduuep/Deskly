@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(["content", "is_internal", "ticket_id", "contact_id"])]
+#[Fillable(['content', 'is_internal', 'ticket_id', 'contact_id'])]
 class Message extends Model
 {
     use HasFactory;
@@ -15,9 +15,10 @@ class Message extends Model
     protected function casts(): array
     {
         return [
-            "is_internal" => "boolean",
+            'is_internal' => 'boolean',
         ];
     }
+
     public function isInternal(): bool
     {
         return $this->is_internal;
@@ -30,6 +31,6 @@ class Message extends Model
 
     public function author(): BelongsTo
     {
-        return $this->belongsTo(Contact::class, "contact_id");
+        return $this->belongsTo(Contact::class, 'contact_id');
     }
 }

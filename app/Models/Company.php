@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(["name", "domain"])]
+#[Fillable(['name', 'domain'])]
 class Company extends Model
 {
     use HasFactory;
@@ -17,7 +17,7 @@ class Company extends Model
     protected function casts(): array
     {
         return [
-            "domain" => DomainCast::class,
+            'domain' => DomainCast::class,
         ];
     }
 
@@ -26,7 +26,7 @@ class Company extends Model
         if ($this->name === $name) {
             return;
         }
-        $this->update(["name" => $name]);
+        $this->update(['name' => $name]);
     }
 
     public function changeDomain(Domain $domain): void
@@ -34,7 +34,7 @@ class Company extends Model
         if ($this->domain->equals($domain)) {
             return;
         }
-        $this->update(["domain" => $domain]);
+        $this->update(['domain' => $domain]);
     }
 
     public function addContact(Contact $contact): void

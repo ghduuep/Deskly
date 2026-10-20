@@ -14,7 +14,7 @@ class CloseTicketController extends Controller
      */
     public function __invoke(Ticket $ticket): TicketResource
     {
-        Gate::authorize("close", $ticket);
+        Gate::authorize('close', $ticket);
 
         $ticket->close();
 

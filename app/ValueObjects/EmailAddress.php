@@ -3,6 +3,7 @@
 namespace App\ValueObjects;
 
 use InvalidArgumentException;
+
 /**
  * Represents an immutable email address value.
  *
@@ -17,8 +18,8 @@ final readonly class EmailAddress
      */
     public function __construct(string $value)
     {
-        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
-            throw new InvalidArgumentException("Invalid e-mail address.");
+        if (! filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            throw new InvalidArgumentException('Invalid e-mail address.');
         }
 
         $this->value = $value;

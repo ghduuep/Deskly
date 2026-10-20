@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(["name", "slug", "description", "parent_id"])]
+#[Fillable(['name', 'slug', 'description', 'parent_id'])]
 class KnowledgeCategory extends Model
 {
     use HasFactory;
@@ -18,9 +18,10 @@ class KnowledgeCategory extends Model
     protected function casts(): array
     {
         return [
-            "slug" => SlugCast::class,
+            'slug' => SlugCast::class,
         ];
     }
+
     /**
      * Moves the category beneath another category.
      *
@@ -31,12 +32,12 @@ class KnowledgeCategory extends Model
     public function moveTo(KnowledgeCategory $parent): void
     {
         if ($this->is($parent)) {
-            throw new DomainException("A category cannot be its own parent.");
+            throw new DomainException('A category cannot be its own parent.');
         }
 
         if ($parent->isDescendantOf($this)) {
             throw new DomainException(
-                "A category cannot be moved under its descendant.",
+                'A category cannot be moved under its descendant.',
             );
         }
 
@@ -82,7 +83,7 @@ class KnowledgeCategory extends Model
 
     public function canBeDeleted(): bool
     {
-        return !$this->articles()->exists() && !$this->children()->exists();
+        return ! $this->articles()->exists() && ! $this->children()->exists();
     }
 
     /**
@@ -92,9 +93,9 @@ class KnowledgeCategory extends Model
      */
     public function remove(): void
     {
-        if (!$this->canBeDeleted()) {
+        if (! $this->canBeDeleted()) {
             throw new DomainException(
-                "Cannot delete a category containing articles or subcategories.",
+                'Cannot delete a category containing articles or subcategories.',
             );
         }
 
@@ -108,11 +109,11 @@ class KnowledgeCategory extends Model
 
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(KnowledgeCategory::class, "parent_id");
+        return $this->belongsTo(KnowledgeCategory::class, 'parent_id');
     }
 
     public function children(): HasMany
     {
-        return $this->hasMany(KnowledgeCategory::class, "parent_id");
+        return $this->hasMany(KnowledgeCategory::class, 'parent_id');
     }
 }

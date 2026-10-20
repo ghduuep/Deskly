@@ -3,6 +3,7 @@
 namespace App\ValueObjects;
 
 use InvalidArgumentException;
+
 /**
  * Represents an immutable domain address value.
  *
@@ -22,13 +23,13 @@ final readonly class Domain
         $normalized = strtolower(trim($value));
 
         if (
-            !filter_var(
+            ! filter_var(
                 $normalized,
                 FILTER_VALIDATE_DOMAIN,
                 FILTER_FLAG_HOSTNAME,
             )
         ) {
-            throw new InvalidArgumentException("Invalid domain.");
+            throw new InvalidArgumentException('Invalid domain.');
         }
 
         $this->value = $normalized;

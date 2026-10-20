@@ -18,8 +18,8 @@ class CompanyFactory extends Factory
     public function definition(): array
     {
         return [
-            "name" => fake()->name(),
-            "domain" => fake()->domainName(),
+            'name' => fake()->name(),
+            'domain' => fake()->domainName(),
         ];
     }
 }

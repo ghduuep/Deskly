@@ -20,11 +20,11 @@ class ContactFactory extends Factory
     public function definition(): array
     {
         return [
-            "user_id" => User::factory(),
-            "company_id" => Company::factory(),
-            "name" => fake()->name(),
-            "email" => fake()->email(),
-            "phone" => fake()->e164PhoneNumber(),
+            'user_id' => User::factory(),
+            'company_id' => Company::factory(),
+            'name' => fake()->name(),
+            'email' => fake()->email(),
+            'phone' => fake()->e164PhoneNumber(),
         ];
     }
 }

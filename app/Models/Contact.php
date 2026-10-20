@@ -19,16 +19,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Contacts may originate from external communication channels
  * and do not required an associated authenticated user.
  */
-#[Fillable(["user_id", "company_id", "name", "email", "phone"])]
+#[Fillable(['user_id', 'company_id', 'name', 'email', 'phone'])]
 class Contact extends Model
 {
-    use HasTags, HasFactory;
+    use HasFactory, HasTags;
 
     protected function casts(): array
     {
         return [
-            "email" => EmailAddressCast::class,
-            "phone" => PhoneNumberCast::class,
+            'email' => EmailAddressCast::class,
+            'phone' => PhoneNumberCast::class,
         ];
     }
 
@@ -38,7 +38,7 @@ class Contact extends Model
             return;
         }
 
-        $this->update(["email" => $email]);
+        $this->update(['email' => $email]);
     }
 
     public function changePhone(PhoneNumber $phone): void
@@ -46,7 +46,7 @@ class Contact extends Model
         if ($this->phone?->equals($phone) === true) {
             return;
         }
-        $this->update(["phone" => $phone]);
+        $this->update(['phone' => $phone]);
     }
 
     public function assignToCompany(Company $company): void
@@ -54,7 +54,7 @@ class Contact extends Model
         if ($this->company_id === $company->id) {
             return;
         }
-        $this->update(["company_id" => $company->id]);
+        $this->update(['company_id' => $company->id]);
     }
 
     public function user(): BelongsTo

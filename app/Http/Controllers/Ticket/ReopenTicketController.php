@@ -14,7 +14,7 @@ class ReopenTicketController extends Controller
      */
     public function __invoke(Ticket $ticket): TicketResource
     {
-        Gate::authorize("reopen", $ticket);
+        Gate::authorize('reopen', $ticket);
 
         $ticket->reopen();
 

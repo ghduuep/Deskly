@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
-#[Fillable(["name", "color"])]
+#[Fillable(['name', 'color'])]
 class Tag extends Model
 {
     use HasFactory;
@@ -16,17 +16,17 @@ class Tag extends Model
     protected function casts(): array
     {
         return [
-            "color" => HexColorCast::class,
+            'color' => HexColorCast::class,
         ];
     }
 
     public function tickets(): MorphToMany
     {
-        return $this->morphedByMany(Ticket::class, "taggable");
+        return $this->morphedByMany(Ticket::class, 'taggable');
     }
 
     public function contacts(): MorphToMany
     {
-        return $this->morphedByMany(Contact::class, "taggable");
+        return $this->morphedByMany(Contact::class, 'taggable');
     }
 }

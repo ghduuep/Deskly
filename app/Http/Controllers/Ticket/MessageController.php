@@ -18,12 +18,12 @@ class MessageController extends Controller
         Request $request,
         Ticket $ticket,
     ): AnonymousResourceCollection {
-        Gate::authorize("view", $ticket);
+        Gate::authorize('view', $ticket);
 
-        $query = $ticket->messages()->with("author")->orderBy("id");
+        $query = $ticket->messages()->with('author')->orderBy('id');
 
-        if (!$request->user()->canBeAssignedTickets()) {
-            $query->where("is_internal", false);
+        if (! $request->user()->canBeAssignedTickets()) {
+            $query->where('is_internal', false);
         }
 
         return MessageResource::collection($query->paginate(20));
@@ -37,10 +37,10 @@ class MessageController extends Controller
 
         $message = $ticket->addMessage(
             $contact,
-            $request->validated("content"),
+            $request->validated('content'),
         );
 
-        return new MessageResource($message->load("author"))
+        return new MessageResource($message->load('author'))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Ticket;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Ticket\AssignTicketRequest;
 use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
-use App\Http\Requests\Ticket\AssignTicketRequest;
 use App\Models\User;
 
 class AssignTicketController extends Controller
@@ -19,12 +19,12 @@ class AssignTicketController extends Controller
     ): TicketResource {
         $data = $request->validated();
 
-        $assignee = User::findOrFail($data["assigned_id"]);
+        $assignee = User::findOrFail($data['assigned_id']);
 
         $ticket->assignTo($assignee);
 
         return new TicketResource(
-            $ticket->refresh()->load(["requester", "assignee"]),
+            $ticket->refresh()->load(['requester', 'assignee']),
         );
     }
 }

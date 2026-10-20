@@ -9,7 +9,7 @@ trait HasTags
 {
     public function tags(): MorphToMany
     {
-        return $this->morphToMany(Tag::class, "taggable");
+        return $this->morphToMany(Tag::class, 'taggable');
     }
 
     public function addTag(Tag $tag): void

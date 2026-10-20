@@ -21,10 +21,10 @@ class TicketFactory extends Factory
     public function definition(): array
     {
         return [
-            "contact_id" => Contact::factory(),
-            "title" => fake()->sentence(),
-            "status" => TicketStatus::Open->value,
-            "priority" => TicketPriority::Normal->value,
+            'contact_id' => Contact::factory(),
+            'title' => fake()->sentence(),
+            'status' => TicketStatus::Open->value,
+            'priority' => TicketPriority::Normal->value,
         ];
     }
 }

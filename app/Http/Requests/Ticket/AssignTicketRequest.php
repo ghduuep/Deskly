@@ -13,7 +13,7 @@ class AssignTicketRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can("assign", $this->route("ticket"));
+        return $this->user()->can('assign', $this->route('ticket'));
     }
 
     /**
@@ -24,10 +24,10 @@ class AssignTicketRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "assigned_id" => [
-                "required",
-                "integer",
-                Rule::exists("users", "id"),
+            'assigned_id' => [
+                'required',
+                'integer',
+                Rule::exists('users', 'id'),
             ],
         ];
     }

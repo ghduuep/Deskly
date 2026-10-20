@@ -17,16 +17,16 @@ class LoginController extends Controller
     {
         $credentials = $request->validated();
 
-        if (!Auth::guard("web")->attempt($credentials)) {
+        if (! Auth::guard('web')->attempt($credentials)) {
             throw ValidationException::withMessages([
-                "email" => ["The provided credentials are wrong."],
+                'email' => ['The provided credentials are wrong.'],
             ]);
         }
 
         $request->session()->regenerate();
 
         return response()->json([
-            "message" => "Authenticated successfully.",
+            'message' => 'Authenticated successfully.',
         ]);
     }
 }

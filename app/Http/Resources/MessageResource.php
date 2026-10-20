@@ -15,11 +15,11 @@ class MessageResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            "id" => $this->id,
-            "content" => $this->content,
-            "is_internal" => $this->is_internal,
-            "author" => new ContactResource($this->whenLoaded("author")),
-            "created_at" => $this->created_at?->toISOString(),
+            'id' => $this->id,
+            'content' => $this->content,
+            'is_internal' => $this->is_internal,
+            'author' => new ContactResource($this->whenLoaded('author')),
+            'created_at' => $this->created_at?->toISOString(),
         ];
     }
 }

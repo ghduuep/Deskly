@@ -12,7 +12,7 @@ class StoreMessageRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can("addMessage", $this->route("ticket"));
+        return $this->user()->can('addMessage', $this->route('ticket'));
     }
 
     /**
@@ -23,7 +23,7 @@ class StoreMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "content" => ["required", "string", "max:10000"],
+            'content' => ['required', 'string', 'max:10000'],
         ];
     }
 }

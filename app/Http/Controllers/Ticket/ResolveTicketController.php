@@ -14,7 +14,7 @@ class ResolveTicketController extends Controller
      */
     public function __invoke(Ticket $ticket): TicketResource
     {
-        Gate::authorize("resolve", $ticket);
+        Gate::authorize('resolve', $ticket);
 
         $ticket->resolve();
 

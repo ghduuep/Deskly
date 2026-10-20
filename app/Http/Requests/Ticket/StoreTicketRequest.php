@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Ticket;
 
 use App\Models\Ticket;
-use App\TicketPriority;
 use App\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -16,7 +15,7 @@ class StoreTicketRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can("create", Ticket::class);
+        return $this->user()->can('create', Ticket::class);
     }
 
     /**
@@ -29,12 +28,12 @@ class StoreTicketRequest extends FormRequest
         $isCustomer = $this->user()->role === UserRole::Customer;
 
         return [
-            "title" => ["required", "string", "max:255"],
-            "contact_id" => [
-                Rule::requiredIf(!$isCustomer),
+            'title' => ['required', 'string', 'max:255'],
+            'contact_id' => [
+                Rule::requiredIf(! $isCustomer),
                 Rule::prohibitedIf($isCustomer),
-                "integer",
-                Rule::exists("contacts", "id"),
+                'integer',
+                Rule::exists('contacts', 'id'),
             ],
         ];
     }

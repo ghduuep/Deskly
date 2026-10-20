@@ -3,6 +3,7 @@
 namespace App\ValueObjects;
 
 use InvalidArgumentException;
+
 /**
  * Represents an immutable phone number in E.164 format.
  *
@@ -20,11 +21,11 @@ final readonly class PhoneNumber
      */
     public function __construct(string $value)
     {
-        $normalized = preg_replace("/[\s().-]/", "", $value);
+        $normalized = preg_replace("/[\s().-]/", '', $value);
 
-        if (!preg_match("/^\+[1-9]\d{1,14}$/", $normalized)) {
+        if (! preg_match("/^\+[1-9]\d{1,14}$/", $normalized)) {
             throw new InvalidArgumentException(
-                "Phone number must use E.164 format.",
+                'Phone number must use E.164 format.',
             );
         }
 

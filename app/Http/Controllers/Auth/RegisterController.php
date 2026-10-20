@@ -23,28 +23,28 @@ class RegisterController extends Controller
 
         $user = DB::transaction(function () use ($data): User {
             $user = User::create([
-                "name" => $data["name"],
-                "email" => $data["email"],
-                "password" => $data["password"],
-                "role" => UserRole::Customer,
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'role' => UserRole::Customer,
             ]);
 
             $user->contact()->create([
-                "name" => $data["name"],
-                "email" => $data["email"],
+                'name' => $data['name'],
+                'email' => $data['email'],
             ]);
 
             return $user;
         });
 
-        Auth::guard("web")->login($user);
+        Auth::guard('web')->login($user);
 
         $request->session()->regenerate();
 
         return response()
             ->json([
-                "message" => "Registered successfully.",
-                "user" => new UserResource($user),
+                'message' => 'Registered successfully.',
+                'user' => new UserResource($user),
             ])
             ->setStatusCode(Response::HTTP_CREATED);
     }

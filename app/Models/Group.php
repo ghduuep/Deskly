@@ -2,23 +2,24 @@
 
 namespace App\Models;
 
+use Database\Factories\GroupFactory;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(["name", "description"])]
+#[Fillable(['name', 'description'])]
 class Group extends Model
 {
-    /** @use HasFactory<\Database\Factories\GroupFactory> */
+    /** @use HasFactory<GroupFactory> */
     use HasFactory;
 
     public function addUser(User $user): void
     {
-        if (!$user->canBeAssignedTickets()) {
+        if (! $user->canBeAssignedTickets()) {
             throw new DomainException(
-                "Only agents and administrators can join groups.",
+                'Only agents and administrators can join groups.',
             );
         }
 

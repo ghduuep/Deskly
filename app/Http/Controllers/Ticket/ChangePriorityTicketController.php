@@ -19,7 +19,7 @@ class ChangePriorityTicketController extends Controller
     ): TicketResource {
         $data = $request->validated();
 
-        $ticket->changePriority(TicketPriority::from($data["priority"]));
+        $ticket->changePriority(TicketPriority::from($data['priority']));
 
         return new TicketResource($ticket->refresh());
     }

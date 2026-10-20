@@ -21,13 +21,13 @@ class KnowledgeArticleFactory extends Factory
     public function definition(): array
     {
         return [
-            "knowledge_category_id" => KnowledgeCategory::factory(),
-            "author_id" => User::factory(),
-            "title" => fake()->title(),
-            "slug" => fake()->slug(),
-            "content" => fake()->sentence(),
-            "status" => KnowledgeArticleStatus::Draft,
-            "published_at" => null,
+            'knowledge_category_id' => KnowledgeCategory::factory(),
+            'author_id' => User::factory(),
+            'title' => fake()->title(),
+            'slug' => fake()->slug(),
+            'content' => fake()->sentence(),
+            'status' => KnowledgeArticleStatus::Draft,
+            'published_at' => null,
         ];
     }
 }

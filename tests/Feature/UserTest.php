@@ -11,17 +11,17 @@ it("should change user's role", function () {
     expect($user->fresh()->role)->toBe(UserRole::Admin);
 });
 
-it("determines wheter a user can be assigned tickets", function (
+it('determines wheter a user can be assigned tickets', function (
     UserRole $role,
     bool $expected,
 ) {
     $user = User::factory()->make([
-        "role" => $role,
+        'role' => $role,
     ]);
 
     expect($user->canBeAssignedTickets())->toBe($expected);
 })->with([
-    "agents can receive tickets" => [UserRole::Agent, true],
-    "admins can receive tickets" => [UserRole::Admin, true],
-    "customer cannot receive tickets" => [UserRole::Customer, false],
+    'agents can receive tickets' => [UserRole::Agent, true],
+    'admins can receive tickets' => [UserRole::Admin, true],
+    'customer cannot receive tickets' => [UserRole::Customer, false],
 ]);

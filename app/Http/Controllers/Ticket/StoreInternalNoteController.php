@@ -22,11 +22,11 @@ class StoreInternalNoteController extends Controller
 
         $message = $ticket->addMessage(
             $contact,
-            $request->validated("content"),
+            $request->validated('content'),
             isInternal: true,
         );
 
-        return new MessageResource($message->load("author"))
+        return new MessageResource($message->load('author'))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }

@@ -14,7 +14,7 @@ class ChangeTicketPriorityRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can("changePriority", $this->route("ticket"));
+        return $this->user()->can('changePriority', $this->route('ticket'));
     }
 
     /**
@@ -25,7 +25,7 @@ class ChangeTicketPriorityRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "priority" => ["required", Rule::enum(TicketPriority::class)],
+            'priority' => ['required', Rule::enum(TicketPriority::class)],
         ];
     }
 }

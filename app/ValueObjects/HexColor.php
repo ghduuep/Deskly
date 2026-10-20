@@ -21,8 +21,8 @@ final readonly class HexColor
      */
     public function __construct(string $value)
     {
-        if (!preg_match("/^#[0-9a-fA-F]{6}$/D", $value)) {
-            throw new InvalidArgumentException("Invalid hexadecimal color.");
+        if (! preg_match('/^#[0-9a-fA-F]{6}$/D', $value)) {
+            throw new InvalidArgumentException('Invalid hexadecimal color.');
         }
 
         $this->value = strtoupper($value);
