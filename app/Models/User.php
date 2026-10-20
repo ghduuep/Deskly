@@ -37,6 +37,10 @@ class User extends Authenticatable
 
     public function changeRole(UserRole $role): void
     {
+        if ($this->role === $role) {
+            return;
+        }
+
         $this->update(["role" => $role]);
     }
 
@@ -54,11 +58,6 @@ class User extends Authenticatable
     public function assignedTickets(): HasMany
     {
         return $this->hasMany(Ticket::class, "assigned_id");
-    }
-
-    public function messages(): HasMany
-    {
-        return $this->hasMany(Message::class);
     }
 
     public function knowledgeArticles(): HasMany
