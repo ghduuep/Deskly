@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
-#[Fillable(["title", "status", "requester_id", "assigned_id", "priority"])]
+#[Fillable(["title", "status", "contact_id", "assigned_id", "priority"])]
 class Ticket extends Model
 {
     use HasTags, HasFactory;
@@ -153,6 +153,16 @@ class Ticket extends Model
         string $content,
         bool $isInternal = false,
     ): Message {
+        if ($this->status === TicketStatus::Closed) {
+            throw new DomainException(
+                "Cannot add messages to a closed ticket.",
+            );
+        }
+
+        if (!$isInternal && $this->status === TicketStatus::Resolved) {
+            $this->reopen();
+        }
+
         $message = $this->messages()->create([
             "contact_id" => $author->id,
             "content" => $content,
