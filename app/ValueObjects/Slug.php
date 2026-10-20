@@ -4,10 +4,22 @@ namespace App\ValueObjects;
 
 use InvalidArgumentException;
 
+/**
+ * Represents an immutable URL-friendly slug.
+ *
+ * Accepts lowercase letters, digits, and syngle hyphens
+ * between alphanumeric characters, with a maximum length
+ * of 255 characters.
+ *
+ * Example: "my-first-article".
+ */
 final readonly class Slug
 {
     public string $value;
 
+    /**
+     * @throws InvalidArgumentException If the slug is invalid.
+     */
     public function __construct(string $value)
     {
         if (

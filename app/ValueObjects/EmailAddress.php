@@ -3,11 +3,18 @@
 namespace App\ValueObjects;
 
 use InvalidArgumentException;
-
+/**
+ * Represents an immutable email address value.
+ *
+ * Validates the email address format without modifying its value.
+ */
 final readonly class EmailAddress
 {
     public string $value;
 
+    /**
+     * @throws InvalidArgumentException If the email address is invalid.
+     */
     public function __construct(string $value)
     {
         if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
