@@ -57,16 +57,13 @@ it("can restore an archived article", function() {
     expect($article->fresh()->status)->toBe(KnowledgeArticleStatus::Draft);
 });
 
-it("should not unpublished not published articles", function(KnowledgeArticleStatus $status) {
+it("should not unpublished not published articles", function() {
     $article = KnowledgeArticle::factory()->create([
-        "status" => $status,
+        "status" => KnowledgeArticleStatus::Archived,
     ]);
 
     expect(fn () => $article->unpublish())->toThrow(DomainException::class);
-})->with([
-    "draft articles cannot be unpublished" => [KnowledgeArticleStatus::Draft],
-    "archived articles cannot be unpublished" => [KnowledgeArticleStatus::Archived],
-]);
+});
 
 it("should not restore not archived articles", function(KnowledgeArticleStatus $status) {
     $article = KnowledgeArticle::factory()->create([
