@@ -21,7 +21,8 @@ class TicketPolicy
      */
     public function view(User $user, Ticket $ticket): bool
     {
-        return $ticket->requester?->is($user->contact) === true || $user->canBeAssignedTickets();
+        return $ticket->requester?->is($user->contact) === true ||
+            $user->canBeAssignedTickets();
     }
 
     /**
@@ -38,6 +39,16 @@ class TicketPolicy
     public function update(User $user, Ticket $ticket): bool
     {
         return $user->canBeAssignedTickets();
+    }
+
+    public function close(User $user, Ticket $ticket): bool
+    {
+        return $user->canBeAssignedTickets();
+    }
+
+    public function addMessage(User $user, Ticket $ticket): bool
+    {
+        return $this->view($user, $ticket);
     }
 
     /**
