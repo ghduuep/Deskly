@@ -20,7 +20,7 @@ class TicketResource extends JsonResource
             "status" => $this->status,
             "priority" => $this->priority,
             "requester" => new ContactResource($this->whenLoaded("requester")),
-            "assignee" => new ContactResource($this->whenLoaded("assignee")),
+            "assignee" => new UserResource($this->whenLoaded("assignee")),
             "company" => $this->whenLoaded("company"),
             "tags" => $this->whenLoaded("tags"),
             "created_at" => $this->created_at?->toISOString(),

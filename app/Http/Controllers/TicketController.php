@@ -53,7 +53,7 @@ class TicketController extends Controller
             "priority" => TicketPriority::Normal,
         ]);
 
-        return new TicketResource($ticket)
+        return new TicketResource($ticket->load(["requester", "assignee"]))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }

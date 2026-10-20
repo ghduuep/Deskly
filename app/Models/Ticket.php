@@ -115,6 +115,16 @@ class Ticket extends Model
         string $content,
         bool $isInternal = false,
     ): Message {
+        if ($this->status === TicketStatus::Closed) {
+            throw new DomainException(
+                "Cannot add messages to a closed ticket.",
+            );
+        }
+
+        if (!$isInternal && $this->status === TicketStatus::Resolved) {
+            $this->reopen();
+        }
+
         $message = $this->messages()->create([
             "contact_id" => $author->id,
             "content" => $content,

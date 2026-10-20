@@ -67,8 +67,19 @@ class TicketPolicy
         return $user->canBeAssignedTickets();
     }
 
+    public function assign(User $user, Ticket $ticket): bool
+    {
+        return $user->canBeAssignedTickets();
+    }
+
     public function addMessage(User $user, Ticket $ticket): bool
     {
-        return $this->view($user, $ticket);
+        return $ticket->requester?->is($user->contact) ||
+            $user->canBeAssignedTickets();
+    }
+
+    public function addInternalNote(User $user, Ticket $ticket): bool
+    {
+        return $user->canBeAssignedTickets();
     }
 }
