@@ -236,6 +236,11 @@ class Ticket extends Model
             }
 
             if ($this->status === TicketStatus::Resolved) {
+                if ($direction === MessageDirection::Outbound) {
+                    throw new DomainException(
+                        "Reopen the ticket before replying.",
+                    );
+                }
                 $this->reopen();
             }
 
