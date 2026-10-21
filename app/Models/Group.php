@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 #[Fillable(["name", "description"])]
 class Group extends Model
@@ -29,7 +30,27 @@ class Group extends Model
 
     public function removeUser(User $user): void
     {
-        $this->users()->detach($user);
+        DB::transaction(function () use ($user) {
+            $group = self::query()->lockForUpdate()->findOrFail($this->id);
+
+            $member = $group->users()->whereKey($user->id)->exists();
+
+            if (!$member) {
+                return;
+            }
+
+            $tickets = $group
+                ->tickets()
+                ->where("assigned_id", $user->id)
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($tickets as $ticket) {
+                $ticket->unassign();
+            }
+
+            $group->users()->detach($user->id);
+        });
     }
 
     public function hasUser(User $user): bool
