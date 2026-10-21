@@ -10,6 +10,7 @@ use App\Events\Ticket\TicketResolved;
 use App\Events\Ticket\TicketUnassigned;
 use App\MessageDirection;
 use App\Models\Contact;
+use App\Models\Group;
 use App\Models\Ticket;
 use App\Models\User;
 use App\TicketPriority;
@@ -78,6 +79,9 @@ it("can assign a ticket to an agent", function () {
     $user = User::factory()->create([
         "role" => UserRole::Agent,
     ]);
+    $group = Group::factory()->create();
+    $group->addUser($user);
+    $ticket->assignToGroup($group);
 
     $ticket->assignTo($user);
 
@@ -89,6 +93,9 @@ it("can unassign an agent from a ticket", function () {
     $user = User::factory()->create([
         "role" => UserRole::Agent,
     ]);
+    $group = Group::factory()->create();
+    $group->addUser($user);
+    $ticket->assignToGroup($group);
 
     $ticket->assignTo($user);
     $ticket->unassign();
@@ -176,6 +183,10 @@ it("dispatches an event when a ticket is assigned", function () {
         "role" => UserRole::Agent,
     ]);
 
+    $group = Group::factory()->create();
+    $group->addUser($agent);
+    $ticket->assignToGroup($group);
+
     Event::fake([TicketAssigned::class]);
 
     $ticket->assignTo($agent);
@@ -197,6 +208,10 @@ it("dispatches and event when a ticket is unassigned", function () {
     $agent = User::factory()->create([
         "role" => UserRole::Agent,
     ]);
+
+    $group = Group::factory()->create();
+    $group->addUser($agent);
+    $ticket->assignToGroup($group);
 
     Event::fake([TicketUnassigned::class]);
 
@@ -380,9 +395,13 @@ it("does not dispatch an event when assigning the same agent", function () {
         "role" => UserRole::Agent,
     ]);
 
-    $ticket = Ticket::factory()->create([
-        "assigned_id" => $agent->id,
-    ]);
+    $group = Group::factory()->create();
+    $group->addUser($agent);
+
+    $ticket = Ticket::factory()->create();
+
+    $ticket->assignToGroup($group);
+    $ticket->assignTo($agent);
 
     Event::fake([TicketAssigned::class]);
 

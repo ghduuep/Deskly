@@ -6,32 +6,36 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('tickets', function (Blueprint $table) {
+        Schema::create("tickets", function (Blueprint $table) {
             $table->id();
             $table
-                ->foreignId('contact_id')
-                ->constrained('contacts')
+                ->foreignId("contact_id")
+                ->constrained("contacts")
                 ->restrictOnDelete();
             $table
-                ->foreignId('company_id')
+                ->foreignId("company_id")
                 ->nullable()
-                ->constrained('companies')
+                ->constrained("companies")
                 ->nullOnDelete();
             $table
-                ->foreignId('assigned_id')
+                ->foreignId("assigned_id")
                 ->nullable()
-                ->constrained('users')
+                ->constrained("users")
                 ->nullOnDelete();
-            $table->string('title');
-            $table->string('status')->default(TicketStatus::Open->value);
-            $table->string('priority')->default(TicketPriority::Normal->value);
+            $table
+                ->foreignId("group_id")
+                ->nullable()
+                ->constrained("groups")
+                ->restrictOnDelete();
+            $table->string("title");
+            $table->string("status")->default(TicketStatus::Open->value);
+            $table->string("priority")->default(TicketPriority::Normal->value);
             $table->timestamps();
         });
     }
@@ -41,6 +45,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tickets');
+        Schema::dropIfExists("tickets");
     }
 };
