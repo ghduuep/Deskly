@@ -22,7 +22,7 @@ class TicketPolicy
     public function view(User $user, Ticket $ticket): Response
     {
         if (
-            $ticket->requester?->is($user->contact()) ||
+            $ticket->requester?->is($user->contact) ||
             $user->canBeAssignedTickets()
         ) {
             return Response::allow();

@@ -2,15 +2,14 @@
 
 use App\Events\Message\InternalNoteAdded;
 use App\Events\Message\MessageSent;
-use App\Events\TicketAssigned as AppTicketAssigned;
 use App\Events\Ticket\TicketAssigned;
 use App\Events\Ticket\TicketClosed;
 use App\Events\Ticket\TicketPriorityChanged;
 use App\Events\Ticket\TicketReopened;
 use App\Events\Ticket\TicketResolved;
 use App\Events\Ticket\TicketUnassigned;
+use App\MessageDirection;
 use App\Models\Contact;
-use App\Models\Group;
 use App\Models\Ticket;
 use App\Models\User;
 use App\TicketPriority;
@@ -24,6 +23,24 @@ it("can resolve an open ticket", function () {
     $ticket->resolve();
 
     expect($ticket->fresh()->status)->toBe(TicketStatus::Resolved);
+});
+
+it("can pend an open ticket", function () {
+    $ticket = Ticket::factory()->create();
+
+    $ticket->pend();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatus::Pending);
+});
+
+it("can resume a pending ticket", function () {
+    $ticket = Ticket::factory()->create([
+        "status" => TicketStatus::Pending,
+    ]);
+
+    $ticket->resume();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatus::Open);
 });
 
 it("can close a resolved ticket", function () {
@@ -83,7 +100,11 @@ it("can add a message to an existing ticket", function () {
     $ticket = Ticket::factory()->create();
     $contact = Contact::factory()->create();
 
-    $message = $ticket->addMessage($contact, "Hello I need help");
+    $message = $ticket->addMessage(
+        $contact,
+        "Hello I need help",
+        MessageDirection::Inbound,
+    );
 
     expect($ticket->fresh()->messages)->toHaveCount(1);
     expect($message->author->is($contact))->toBeTrue();
@@ -101,6 +122,19 @@ it("can add an internal note to an existing ticket", function () {
     expect($message->ticket->is($ticket))->toBeTrue();
 });
 
+it("should not mark as pending not open tickets", function (
+    TicketStatus $status,
+) {
+    $ticket = Ticket::factory()->create([
+        "status" => $status,
+    ]);
+
+    expect(fn() => $ticket->pend())->toThrow(DomainException::class);
+})->with([
+    "resolved tickets cannot be pending" => [TicketStatus::Resolved],
+    "closed tickets cannot be pending" => [TicketStatus::Closed],
+]);
+
 it("should not resolve a closed ticket", function () {
     $ticket = Ticket::factory()->create([
         "status" => TicketStatus::Closed,
@@ -116,8 +150,8 @@ it("should not close a non resolved ticket", function (TicketStatus $status) {
 
     expect(fn() => $ticket->close())->toThrow(DomainException::class);
 })->with([
-    "Open tickets cannot be closed" => [TicketStatus::Open],
-    "Pending tickets cannot be closed" => [TicketStatus::Pending],
+    "open tickets cannot be closed" => [TicketStatus::Open],
+    "pending tickets cannot be closed" => [TicketStatus::Pending],
 ]);
 
 it("should not reopen a pending ticket", function () {
@@ -262,7 +296,11 @@ it("dispatches an event when a message is added", function () {
 
     Event::fake([MessageSent::class]);
 
-    $message = $ticket->addMessage($contact, "I need help");
+    $message = $ticket->addMessage(
+        $contact,
+        "I need help",
+        MessageDirection::Inbound,
+    );
 
     expect($ticket->fresh()->messages)->toHaveCount(1);
     expect($message->author->is($contact))->toBeTrue();

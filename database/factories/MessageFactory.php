@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\MessageDirection;
+use App\MessageType;
 use App\Models\Contact;
 use App\Models\Message;
 use App\Models\Ticket;
@@ -20,10 +22,11 @@ class MessageFactory extends Factory
     public function definition(): array
     {
         return [
-            'ticket_id' => Ticket::factory(),
-            'contact_id' => Contact::factory(),
-            'content' => fake()->sentence(),
-            'is_internal' => false,
+            "ticket_id" => Ticket::factory(),
+            "contact_id" => Contact::factory(),
+            "content" => fake()->sentence(),
+            "type" => MessageType::Reply,
+            "direction" => MessageDirection::Outbound,
         ];
     }
 }

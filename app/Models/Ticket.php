@@ -10,6 +10,10 @@ use App\Events\Ticket\TicketPriorityChanged;
 use App\Events\Ticket\TicketReopened;
 use App\Events\Ticket\TicketResolved;
 use App\Events\Ticket\TicketUnassigned;
+use App\Events\Ticket\TicketPended;
+use App\Events\Ticket\TicketResumed;
+use App\MessageDirection;
+use App\MessageType;
 use App\Models\Concerns\HasTags;
 use App\TicketPriority;
 use App\TicketStatus;
@@ -20,6 +24,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 #[Fillable(["title", "status", "contact_id", "assigned_id", "priority"])]
 class Ticket extends Model
@@ -32,6 +38,52 @@ class Ticket extends Model
             "status" => TicketStatus::class,
             "priority" => TicketPriority::class,
         ];
+    }
+
+    /**
+     * Marks an open ticket as pending.
+     *
+     * Does nothing if the ticket is already pending.
+     *
+     * @throws
+     */
+    public function pend(): void
+    {
+        if ($this->status === TicketStatus::Pending) {
+            return;
+        }
+
+        if ($this->status !== TicketStatus::Open) {
+            throw new DomainException(
+                "Only open tickets can be marked as pending.",
+            );
+        }
+
+        $this->update(["status" => TicketStatus::Pending]);
+
+        TicketPended::dispatch($this->id);
+    }
+
+    /**
+     * Resumes a pending ticket.
+     *
+     * Does nothing if the ticket is already open.
+     *
+     * @throws DomainException If the ticket cannot be resumed.
+     */
+    public function resume(): void
+    {
+        if ($this->status === TicketStatus::Open) {
+            return;
+        }
+
+        if ($this->status !== TicketStatus::Pending) {
+            throw new DomainException("Only pending tickets can be resumed.");
+        }
+
+        $this->update(["status" => TicketStatus::Open]);
+
+        TicketResumed::dispatch($this->id);
     }
 
     /**
@@ -171,23 +223,47 @@ class Ticket extends Model
      *
      * @throws DomainException If the ticket is closed.
      */
-    public function addMessage(Contact $author, string $content): Message
-    {
-        if ($this->status === TicketStatus::Closed) {
-            throw new DomainException(
-                "Cannot add messages to a closed ticket.",
+    public function addMessage(
+        Contact $author,
+        string $content,
+        MessageDirection $direction,
+    ): Message {
+        return DB::transaction(function () use ($author, $content, $direction) {
+            if ($this->status === TicketStatus::Closed) {
+                throw new DomainException(
+                    "Cannot add messages to a closed ticket.",
+                );
+            }
+
+            if ($this->status === TicketStatus::Resolved) {
+                $this->reopen();
+            }
+
+            if (
+                $direction === MessageDirection::Inbound &&
+                $this->status === TicketStatus::Pending
+            ) {
+                $this->resume();
+            }
+
+            if (
+                $direction === MessageDirection::Outbound &&
+                $this->status === TicketStatus::Open
+            ) {
+                $this->pend();
+            }
+
+            $message = $this->createMessage(
+                $author,
+                $content,
+                MessageType::Reply,
+                $direction,
             );
-        }
 
-        if ($this->status === TicketStatus::Resolved) {
-            $this->reopen();
-        }
+            MessageSent::dispatch($message->id, $this->id);
 
-        $message = $this->createMessage($author, $content, false);
-
-        MessageSent::dispatch($message->id, $this->id);
-
-        return $message;
+            return $message;
+        });
     }
 
     /**
@@ -205,7 +281,11 @@ class Ticket extends Model
             );
         }
 
-        $message = $this->createMessage($author, $content, true);
+        $message = $this->createMessage(
+            $author,
+            $content,
+            MessageType::Internal,
+        );
 
         InternalNoteAdded::dispatch($message->id, $this->id);
 
@@ -215,12 +295,26 @@ class Ticket extends Model
     private function createMessage(
         Contact $author,
         string $content,
-        bool $isInternal,
+        MessageType $type,
+        ?MessageDirection $direction = null,
     ): Message {
+        if ($type === MessageType::Reply && $direction === null) {
+            throw new InvalidArgumentException(
+                "Public replies required a direction.",
+            );
+        }
+
+        if ($type === MessageType::Internal && $direction !== null) {
+            throw new InvalidArgumentException(
+                "Internal notes cannot have a direction.",
+            );
+        }
+
         return $this->messages()->create([
             "contact_id" => $author->id,
             "content" => $content,
-            "is_internal" => $isInternal,
+            "type" => $type,
+            "direction" => $direction,
         ]);
     }
 

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\MessageDirection;
+use App\MessageType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['content', 'is_internal', 'ticket_id', 'contact_id'])]
+#[Fillable(["content", "type", "direction", "ticket_id", "contact_id"])]
 class Message extends Model
 {
     use HasFactory;
@@ -15,7 +17,8 @@ class Message extends Model
     protected function casts(): array
     {
         return [
-            'is_internal' => 'boolean',
+            "type" => MessageType::class,
+            "direction" => MessageDirection::class,
         ];
     }
 
@@ -31,6 +34,6 @@ class Message extends Model
 
     public function author(): BelongsTo
     {
-        return $this->belongsTo(Contact::class, 'contact_id');
+        return $this->belongsTo(Contact::class, "contact_id");
     }
 }
