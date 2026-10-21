@@ -8,15 +8,17 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class InternalNodeAdded
+class InternalNoteAdded
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
      * Create a new event instance.
      */
-    public function __construct()
-    {
+    public function __construct(
+        public readonly int $messageId,
+        public readonly int $ticketId,
+    ) {
         //
     }
 
@@ -27,8 +29,6 @@ class InternalNodeAdded
      */
     public function broadcastOn(): array
     {
-        return [
-            new PrivateChannel('channel-name'),
-        ];
+        return [new PrivateChannel("channel-name")];
     }
 }
