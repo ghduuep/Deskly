@@ -240,15 +240,23 @@ class Ticket extends Model
      */
     public function unassign(): void
     {
-        if ($this->assigned_id === null) {
-            return;
-        }
+        DB::transaction(function () {
+            $ticket = self::query()->lockForUpdate()->findOrFail($this->id);
 
-        $previousAssigneeId = $this->assigned_id;
+            if ($ticket->assigned_id === null) {
+                return;
+            }
 
-        $this->update(["assigned_id" => null]);
+            $previousAssigneeId = $ticket->assigned_id;
 
-        TicketUnassigned::dispatch($this->id, $previousAssigneeId);
+            $ticket->update(["assigned_id" => null]);
+
+            TicketUnassigned::dispatch($ticket->id, $previousAssigneeId);
+
+            $this->setRawAttributes($ticket->getAttributes(), true);
+
+            $this->unsetRelations();
+        }, 3);
     }
 
     /**
@@ -264,46 +272,48 @@ class Ticket extends Model
         MessageDirection $direction,
     ): Message {
         return DB::transaction(function () use ($author, $content, $direction) {
-            if ($this->status === TicketStatus::Closed) {
+            $ticket = self::query()->lockForUpdate()->findOrFail($this->id);
+
+            if ($ticket->status === TicketStatus::Closed) {
                 throw new DomainException(
                     "Cannot add messages to a closed ticket.",
                 );
             }
 
-            if ($this->status === TicketStatus::Resolved) {
+            if ($ticket->status === TicketStatus::Resolved) {
                 if ($direction === MessageDirection::Outbound) {
                     throw new DomainException(
                         "Reopen the ticket before replying.",
                     );
                 }
-                $this->reopen();
+                $ticket->reopen();
             }
 
             if (
                 $direction === MessageDirection::Inbound &&
-                $this->status === TicketStatus::Pending
+                $ticket->status === TicketStatus::Pending
             ) {
-                $this->resume();
+                $ticket->resume();
             }
 
             if (
                 $direction === MessageDirection::Outbound &&
-                $this->status === TicketStatus::Open
+                $ticket->status === TicketStatus::Open
             ) {
-                $this->pend();
+                $ticket->pend();
             }
 
-            $message = $this->createMessage(
+            $message = $ticket->createMessage(
                 $author,
                 $content,
                 MessageType::Reply,
                 $direction,
             );
 
-            MessageSent::dispatch($message->id, $this->id);
+            MessageSent::dispatch($message->id, $ticket->id);
 
             return $message;
-        });
+        }, 3);
     }
 
     /**
