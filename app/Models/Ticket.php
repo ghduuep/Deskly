@@ -6,12 +6,12 @@ use App\Events\Message\InternalNoteAdded;
 use App\Events\Message\MessageSent;
 use App\Events\Ticket\TicketAssigned;
 use App\Events\Ticket\TicketClosed;
+use App\Events\Ticket\TicketPended;
 use App\Events\Ticket\TicketPriorityChanged;
 use App\Events\Ticket\TicketReopened;
 use App\Events\Ticket\TicketResolved;
-use App\Events\Ticket\TicketUnassigned;
-use App\Events\Ticket\TicketPended;
 use App\Events\Ticket\TicketResumed;
+use App\Events\Ticket\TicketUnassigned;
 use App\MessageDirection;
 use App\MessageType;
 use App\Models\Concerns\HasTags;
@@ -23,11 +23,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-#[Fillable(["title", "status", "contact_id", "assigned_id", "priority"])]
+#[Fillable(['title', 'status', 'contact_id', 'assigned_id', 'priority'])]
 class Ticket extends Model
 {
     use HasFactory, HasTags;
@@ -35,8 +34,8 @@ class Ticket extends Model
     protected function casts(): array
     {
         return [
-            "status" => TicketStatus::class,
-            "priority" => TicketPriority::class,
+            'status' => TicketStatus::class,
+            'priority' => TicketPriority::class,
         ];
     }
 
@@ -55,11 +54,11 @@ class Ticket extends Model
 
         if ($this->status !== TicketStatus::Open) {
             throw new DomainException(
-                "Only open tickets can be marked as pending.",
+                'Only open tickets can be marked as pending.',
             );
         }
 
-        $this->update(["status" => TicketStatus::Pending]);
+        $this->update(['status' => TicketStatus::Pending]);
 
         TicketPended::dispatch($this->id);
     }
@@ -78,10 +77,10 @@ class Ticket extends Model
         }
 
         if ($this->status !== TicketStatus::Pending) {
-            throw new DomainException("Only pending tickets can be resumed.");
+            throw new DomainException('Only pending tickets can be resumed.');
         }
 
-        $this->update(["status" => TicketStatus::Open]);
+        $this->update(['status' => TicketStatus::Open]);
 
         TicketResumed::dispatch($this->id);
     }
@@ -100,9 +99,9 @@ class Ticket extends Model
         }
 
         if ($this->status === TicketStatus::Closed) {
-            throw new DomainException("Cannot resolve a closed ticket.");
+            throw new DomainException('Cannot resolve a closed ticket.');
         }
-        $this->update(["status" => TicketStatus::Resolved]);
+        $this->update(['status' => TicketStatus::Resolved]);
 
         TicketResolved::dispatch(ticketId: $this->id);
     }
@@ -121,9 +120,9 @@ class Ticket extends Model
         }
 
         if ($this->status !== TicketStatus::Resolved) {
-            throw new DomainException("Only resolved tickets can be closed.");
+            throw new DomainException('Only resolved tickets can be closed.');
         }
-        $this->update(["status" => TicketStatus::Closed]);
+        $this->update(['status' => TicketStatus::Closed]);
 
         TicketClosed::dispatch(ticketId: $this->id);
     }
@@ -142,15 +141,15 @@ class Ticket extends Model
         }
 
         if (
-            !in_array(
+            ! in_array(
                 $this->status,
                 [TicketStatus::Resolved, TicketStatus::Closed],
                 true,
             )
         ) {
-            throw new DomainException("This ticket cannot be reopened.");
+            throw new DomainException('This ticket cannot be reopened.');
         }
-        $this->update(["status" => TicketStatus::Open]);
+        $this->update(['status' => TicketStatus::Open]);
 
         TicketReopened::dispatch(ticketId: $this->id);
     }
@@ -168,7 +167,7 @@ class Ticket extends Model
 
         $previousPriority = $this->priority;
 
-        $this->update(["priority" => $priority]);
+        $this->update(['priority' => $priority]);
 
         TicketPriorityChanged::dispatch(
             $this->id,
@@ -190,10 +189,10 @@ class Ticket extends Model
             return;
         }
 
-        if (!$user->canBeAssignedTickets()) {
-            throw new DomainException("This user cannot be assigned tickets.");
+        if (! $user->canBeAssignedTickets()) {
+            throw new DomainException('This user cannot be assigned tickets.');
         }
-        $this->update(["assigned_id" => $user->id]);
+        $this->update(['assigned_id' => $user->id]);
 
         TicketAssigned::dispatch($this->id, $user->id);
     }
@@ -211,7 +210,7 @@ class Ticket extends Model
 
         $previousAssigneeId = $this->assigned_id;
 
-        $this->update(["assigned_id" => null]);
+        $this->update(['assigned_id' => null]);
 
         TicketUnassigned::dispatch($this->id, $previousAssigneeId);
     }
@@ -231,14 +230,14 @@ class Ticket extends Model
         return DB::transaction(function () use ($author, $content, $direction) {
             if ($this->status === TicketStatus::Closed) {
                 throw new DomainException(
-                    "Cannot add messages to a closed ticket.",
+                    'Cannot add messages to a closed ticket.',
                 );
             }
 
             if ($this->status === TicketStatus::Resolved) {
                 if ($direction === MessageDirection::Outbound) {
                     throw new DomainException(
-                        "Reopen the ticket before replying.",
+                        'Reopen the ticket before replying.',
                     );
                 }
                 $this->reopen();
@@ -282,7 +281,7 @@ class Ticket extends Model
     {
         if ($this->status === TicketStatus::Closed) {
             throw new DomainException(
-                "Cannot add internal notes to a closed ticket.",
+                'Cannot add internal notes to a closed ticket.',
             );
         }
 
@@ -305,32 +304,32 @@ class Ticket extends Model
     ): Message {
         if ($type === MessageType::Reply && $direction === null) {
             throw new InvalidArgumentException(
-                "Public replies required a direction.",
+                'Public replies required a direction.',
             );
         }
 
         if ($type === MessageType::Internal && $direction !== null) {
             throw new InvalidArgumentException(
-                "Internal notes cannot have a direction.",
+                'Internal notes cannot have a direction.',
             );
         }
 
         return $this->messages()->create([
-            "contact_id" => $author->id,
-            "content" => $content,
-            "type" => $type,
-            "direction" => $direction,
+            'contact_id' => $author->id,
+            'content' => $content,
+            'type' => $type,
+            'direction' => $direction,
         ]);
     }
 
     public function requester(): BelongsTo
     {
-        return $this->belongsTo(Contact::class, "contact_id");
+        return $this->belongsTo(Contact::class, 'contact_id');
     }
 
     public function assignee(): BelongsTo
     {
-        return $this->belongsTo(User::class, "assigned_id");
+        return $this->belongsTo(User::class, 'assigned_id');
     }
 
     public function company(): BelongsTo
@@ -341,10 +340,5 @@ class Ticket extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
-    }
-
-    public function tags(): MorphToMany
-    {
-        return $this->morphToMany(Tag::class, "taggable");
     }
 }
