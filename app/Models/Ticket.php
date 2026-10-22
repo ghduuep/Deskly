@@ -13,6 +13,7 @@ use App\Events\Ticket\TicketReopened;
 use App\Events\Ticket\TicketResolved;
 use App\Events\Ticket\TicketResumed;
 use App\Events\Ticket\TicketUnassigned;
+use App\HtmlSanitizer;
 use App\MessageDirection;
 use App\MessageType;
 use App\Models\Concerns\HasTags;
@@ -359,6 +360,8 @@ class Ticket extends Model
                 "Internal notes cannot have a direction.",
             );
         }
+
+        $content = app(HtmlSanitizer::class)->sanitize($content);
 
         return $this->messages()->create([
             "contact_id" => $author->id,
