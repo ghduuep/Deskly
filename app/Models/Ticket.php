@@ -326,21 +326,25 @@ class Ticket extends Model
      */
     public function addInternalNote(Contact $author, string $content): Message
     {
-        if ($this->status === TicketStatus::Closed) {
-            throw new DomainException(
-                "Cannot add internal notes to a closed ticket.",
+        return DB::transaction(function () use ($author, $content) {
+            $ticket = self::query()->lockForUpdate()->findOrFail($this->id);
+
+            if ($ticket->status === TicketStatus::Closed) {
+                throw new DomainException(
+                    "Cannot add internal notes to a closed ticket.",
+                );
+            }
+
+            $message = $ticket->createMessage(
+                $author,
+                $content,
+                MessageType::Internal,
             );
-        }
 
-        $message = $this->createMessage(
-            $author,
-            $content,
-            MessageType::Internal,
-        );
+            InternalNoteAdded::dispatch($message->id, $ticket->id);
 
-        InternalNoteAdded::dispatch($message->id, $this->id);
-
-        return $message;
+            return $message;
+        }, 3);
     }
 
     private function createMessage(
