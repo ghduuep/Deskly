@@ -50,7 +50,7 @@ class KnowledgeArticle extends Model
             $article = self::query()->lockForUpdate()->findOrFail($this->id);
 
             if ($article->status === KnowledgeArticleStatus::Published) {
-                return;
+                return $article;
             }
 
             if ($article->status !== KnowledgeArticleStatus::Draft) {
@@ -85,7 +85,7 @@ class KnowledgeArticle extends Model
             $article = self::query()->lockForUpdate()->findOrFail($this->id);
 
             if ($article->status === KnowledgeArticleStatus::Draft) {
-                return;
+                return $article;
             }
 
             if ($article->status !== KnowledgeArticleStatus::Published) {
@@ -98,7 +98,7 @@ class KnowledgeArticle extends Model
                 "published_at" => null,
             ]);
 
-            KnowledgeArticlePublished::dispatch($article->id);
+            KnowledgeArticleUnpublished::dispatch($article->id);
 
             return $article;
         });
@@ -118,7 +118,7 @@ class KnowledgeArticle extends Model
             $article = self::query()->lockForUpdate()->findOrFail($this->id);
 
             if ($article->status === KnowledgeArticleStatus::Archived) {
-                return;
+                return $article;
             }
             $article->update(["status" => KnowledgeArticleStatus::Archived]);
 
