@@ -3,24 +3,27 @@
 namespace App\Models;
 
 use App\Casts\SlugCast;
+use App\Events\KnowledgeArticle\KnowledgeArticleArchived;
+use App\Events\KnowledgeArticle\KnowledgeArticlePublished;
+use App\Events\KnowledgeArticle\KnowledgeArticleRestored;
+use App\Events\KnowledgeArticle\KnowledgeArticleUnpublished;
 use App\KnowledgeArticleStatus;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
-#[
-    Fillable([
-        'knowledge_category_id',
-        'author_id',
-        'title',
-        'slug',
-        'content',
-        'status',
-        'published_at',
-    ]),
-]
+#[Fillable([
+    "knowledge_category_id",
+    "author_id",
+    "title",
+    "slug",
+    "content",
+    "status",
+    "published_at",
+])]
 class KnowledgeArticle extends Model
 {
     use HasFactory;
@@ -28,9 +31,9 @@ class KnowledgeArticle extends Model
     protected function casts(): array
     {
         return [
-            'status' => KnowledgeArticleStatus::class,
-            'published_at' => 'datetime',
-            'slug' => SlugCast::class,
+            "status" => KnowledgeArticleStatus::class,
+            "published_at" => "datetime",
+            "slug" => SlugCast::class,
         ];
     }
 
@@ -43,17 +46,30 @@ class KnowledgeArticle extends Model
      */
     public function publish(): void
     {
-        if ($this->status === KnowledgeArticleStatus::Published) {
-            return;
-        }
+        $article = DB::transaction(function () {
+            $article = self::query()->lockForUpdate()->findOrFail($this->id);
 
-        if ($this->status !== KnowledgeArticleStatus::Draft) {
-            throw new DomainException('Only draft articles can be published.');
-        }
-        $this->update([
-            'status' => KnowledgeArticleStatus::Published,
-            'published_at' => now(),
-        ]);
+            if ($article->status === KnowledgeArticleStatus::Published) {
+                return;
+            }
+
+            if ($article->status !== KnowledgeArticleStatus::Draft) {
+                throw new DomainException(
+                    "Only draft articles can be published.",
+                );
+            }
+            $article->update([
+                "status" => KnowledgeArticleStatus::Published,
+                "published_at" => now(),
+            ]);
+
+            KnowledgeArticlePublished::dispatch($article->id);
+
+            return $article;
+        });
+
+        $this->setRawAttributes($article->getAttributes(), true);
+        $this->unsetRelations();
     }
 
     /**
@@ -65,19 +81,30 @@ class KnowledgeArticle extends Model
      */
     public function unpublish(): void
     {
-        if ($this->status === KnowledgeArticleStatus::Draft) {
-            return;
-        }
+        $article = DB::transaction(function () {
+            $article = self::query()->lockForUpdate()->findOrFail($this->id);
 
-        if ($this->status !== KnowledgeArticleStatus::Published) {
-            throw new DomainException(
-                'Only published articles can be unpublished.',
-            );
-        }
-        $this->update([
-            'status' => KnowledgeArticleStatus::Draft,
-            'published_at' => null,
-        ]);
+            if ($article->status === KnowledgeArticleStatus::Draft) {
+                return;
+            }
+
+            if ($article->status !== KnowledgeArticleStatus::Published) {
+                throw new DomainException(
+                    "Only published articles can be unpublished.",
+                );
+            }
+            $article->update([
+                "status" => KnowledgeArticleStatus::Draft,
+                "published_at" => null,
+            ]);
+
+            KnowledgeArticlePublished::dispatch($article->id);
+
+            return $article;
+        });
+
+        $this->setRawAttributes($article->getAttributes(), true);
+        $this->unsetRelations();
     }
 
     /**
@@ -87,10 +114,21 @@ class KnowledgeArticle extends Model
      */
     public function archive(): void
     {
-        if ($this->status === KnowledgeArticleStatus::Archived) {
-            return;
-        }
-        $this->update(['status' => KnowledgeArticleStatus::Archived]);
+        $article = DB::transaction(function () {
+            $article = self::query()->lockForUpdate()->findOrFail($this->id);
+
+            if ($article->status === KnowledgeArticleStatus::Archived) {
+                return;
+            }
+            $article->update(["status" => KnowledgeArticleStatus::Archived]);
+
+            KnowledgeArticleArchived::dispatch($article->id);
+
+            return $article;
+        });
+
+        $this->setRawAttributes($article->getAttributes(), true);
+        $this->unsetRelations();
     }
 
     /**
@@ -100,12 +138,23 @@ class KnowledgeArticle extends Model
      */
     public function restore(): void
     {
-        if ($this->status !== KnowledgeArticleStatus::Archived) {
-            throw new DomainException(
-                'Only archived articles can be restored.',
-            );
-        }
-        $this->update(['status' => KnowledgeArticleStatus::Draft]);
+        $article = DB::transaction(function () {
+            $article = self::query()->lockForUpdate()->findOrFail($this->id);
+
+            if ($article->status !== KnowledgeArticleStatus::Archived) {
+                throw new DomainException(
+                    "Only archived articles can be restored.",
+                );
+            }
+            $article->update(["status" => KnowledgeArticleStatus::Draft]);
+
+            KnowledgeArticleRestored::dispatch($article->id);
+
+            return $article;
+        });
+
+        $this->setRawAttributes($article->getAttributes(), true);
+        $this->unsetRelations();
     }
 
     public function isPublished(): bool
@@ -124,20 +173,21 @@ class KnowledgeArticle extends Model
             return;
         }
 
-        $this->category()->associate($category);
-        $this->save();
+        $this->update([
+            "knowledge_category_id" => $category->id,
+        ]);
     }
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(
             KnowledgeCategory::class,
-            'knowledge_category_id',
+            "knowledge_category_id",
         );
     }
 
     public function author(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'author_id');
+        return $this->belongsTo(User::class, "author_id");
     }
 }

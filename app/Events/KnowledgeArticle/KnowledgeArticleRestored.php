@@ -16,7 +16,7 @@ class KnowledgeArticleRestored implements ShouldDispatchAfterCommit
     /**
      * Create a new event instance.
      */
-    public function __construct()
+    public function __construct(public readonly int $articleId)
     {
         //
     }
