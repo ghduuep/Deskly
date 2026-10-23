@@ -19,13 +19,18 @@ class Group extends Model
 
     public function addUser(User $user): void
     {
-        if (!$user->canBeAssignedTickets()) {
-            throw new DomainException(
-                "Only agents and administrators can join groups.",
-            );
-        }
+        DB::transaction(function () use ($user) {
+            $group = self::query()->lockForUpdate()->findOrFail($this->id);
+            $agent = User::query()->lockForUpdate()->findOrFail($user->id);
 
-        $this->users()->syncWithoutDetaching([$user->id]);
+            if (!$agent->canBeAssignedTickets()) {
+                throw new DomainException(
+                    "Only agents and administrators can join groups.",
+                );
+            }
+
+            $group->users()->syncWithoutDetaching([$agent->id]);
+        });
     }
 
     public function removeUser(User $user): void

@@ -252,6 +252,7 @@ class Ticket extends Model
     public function assignTo(User $user): void
     {
         $ticket = DB::transaction(function () use ($user) {
+            $agent = User::query()->lockForUpdate()->findOrFail($user->id);
             $ticket = self::query()->lockForUpdate()->findOrFail($this->id);
 
             if ($ticket->group_id === null) {
@@ -260,27 +261,27 @@ class Ticket extends Model
                 );
             }
 
-            if (!$user->canBeAssignedTickets()) {
+            if (!$agent->canBeAssignedTickets()) {
                 throw new DomainException(
                     "This user cannot be assigned tickets.",
                 );
             }
 
-            if (!$ticket->group->hasUser($user)) {
+            if (!$ticket->group->hasUser($agent)) {
                 throw new DomainException(
                     "The agent must belong to the ticket group.",
                 );
             }
 
-            if ($ticket->assigned_id === $user->id) {
+            if ($ticket->assigned_id === $agent->id) {
                 return $ticket;
             }
 
             $ticket->update([
-                "assigned_id" => $user->id,
+                "assigned_id" => $agent->id,
             ]);
 
-            TicketAssigned::dispatch($ticket->id, $user->id);
+            TicketAssigned::dispatch($ticket->id, $agent->id);
 
             return $ticket;
         });
@@ -442,6 +443,7 @@ class Ticket extends Model
     public function assignToGroup(Group $group): void
     {
         $ticket = DB::transaction(function () use ($group) {
+            $group = self::query()->lockForUpdate()->findOrFail($this->id);
             $ticket = self::query()->lockForUpdate()->findOrFail($this->id);
 
             if ($ticket->group_id === $group->id) {
