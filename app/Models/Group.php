@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 #[Fillable(["name", "description"])]
 class Group extends Model
@@ -19,43 +18,35 @@ class Group extends Model
 
     public function addUser(User $user): void
     {
-        DB::transaction(function () use ($user) {
-            $group = self::query()->lockForUpdate()->findOrFail($this->id);
-            $agent = User::query()->lockForUpdate()->findOrFail($user->id);
+        $group = self::query()->findOrFail($this->id);
+        $agent = User::query()->findOrFail($user->id);
 
-            if (!$agent->canBeAssignedTickets()) {
-                throw new DomainException(
-                    "Only agents and administrators can join groups.",
-                );
-            }
+        if (!$agent->canBeAssignedTickets()) {
+            throw new DomainException(
+                "Only agents and administrators can join groups.",
+            );
+        }
 
-            $group->users()->syncWithoutDetaching([$agent->id]);
-        });
+        $group->users()->syncWithoutDetaching([$agent->id]);
     }
 
     public function removeUser(User $user): void
     {
-        DB::transaction(function () use ($user) {
-            $group = self::query()->lockForUpdate()->findOrFail($this->id);
+        $group = self::query()->findOrFail($this->id);
 
-            $member = $group->users()->whereKey($user->id)->exists();
+        $member = $group->users()->whereKey($user->id)->exists();
 
-            if (!$member) {
-                return;
-            }
+        if (!$member) {
+            return;
+        }
 
-            $tickets = $group
-                ->tickets()
-                ->where("assigned_id", $user->id)
-                ->lockForUpdate()
-                ->get();
+        $tickets = $group->tickets()->where("assigned_id", $user->id)->get();
 
-            foreach ($tickets as $ticket) {
-                $ticket->unassign();
-            }
+        foreach ($tickets as $ticket) {
+            $ticket->unassign();
+        }
 
-            $group->users()->detach($user->id);
-        });
+        $group->users()->detach($user->id);
     }
 
     public function hasUser(User $user): bool

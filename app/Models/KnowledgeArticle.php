@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\DB;
 
 #[Fillable([
     "knowledge_category_id",
@@ -46,27 +45,24 @@ class KnowledgeArticle extends Model
      */
     public function publish(): void
     {
-        $article = DB::transaction(function () {
-            $article = self::query()->lockForUpdate()->findOrFail($this->id);
+        $article = self::query()->findOrFail($this->id);
 
-            if ($article->status === KnowledgeArticleStatus::Published) {
-                return $article;
-            }
+        if ($article->status === KnowledgeArticleStatus::Published) {
+            $this->setRawAttributes($article->getAttributes(), true);
+            $this->unsetRelations();
 
-            if ($article->status !== KnowledgeArticleStatus::Draft) {
-                throw new DomainException(
-                    "Only draft articles can be published.",
-                );
-            }
-            $article->update([
-                "status" => KnowledgeArticleStatus::Published,
-                "published_at" => now(),
-            ]);
+            return;
+        }
 
-            KnowledgeArticlePublished::dispatch($article->id);
+        if ($article->status !== KnowledgeArticleStatus::Draft) {
+            throw new DomainException("Only draft articles can be published.");
+        }
+        $article->update([
+            "status" => KnowledgeArticleStatus::Published,
+            "published_at" => now(),
+        ]);
 
-            return $article;
-        });
+        KnowledgeArticlePublished::dispatch($article->id);
 
         $this->setRawAttributes($article->getAttributes(), true);
         $this->unsetRelations();
@@ -81,27 +77,26 @@ class KnowledgeArticle extends Model
      */
     public function unpublish(): void
     {
-        $article = DB::transaction(function () {
-            $article = self::query()->lockForUpdate()->findOrFail($this->id);
+        $article = self::query()->findOrFail($this->id);
 
-            if ($article->status === KnowledgeArticleStatus::Draft) {
-                return $article;
-            }
+        if ($article->status === KnowledgeArticleStatus::Draft) {
+            $this->setRawAttributes($article->getAttributes(), true);
+            $this->unsetRelations();
 
-            if ($article->status !== KnowledgeArticleStatus::Published) {
-                throw new DomainException(
-                    "Only published articles can be unpublished.",
-                );
-            }
-            $article->update([
-                "status" => KnowledgeArticleStatus::Draft,
-                "published_at" => null,
-            ]);
+            return;
+        }
 
-            KnowledgeArticleUnpublished::dispatch($article->id);
+        if ($article->status !== KnowledgeArticleStatus::Published) {
+            throw new DomainException(
+                "Only published articles can be unpublished.",
+            );
+        }
+        $article->update([
+            "status" => KnowledgeArticleStatus::Draft,
+            "published_at" => null,
+        ]);
 
-            return $article;
-        });
+        KnowledgeArticleUnpublished::dispatch($article->id);
 
         $this->setRawAttributes($article->getAttributes(), true);
         $this->unsetRelations();
@@ -114,18 +109,17 @@ class KnowledgeArticle extends Model
      */
     public function archive(): void
     {
-        $article = DB::transaction(function () {
-            $article = self::query()->lockForUpdate()->findOrFail($this->id);
+        $article = self::query()->findOrFail($this->id);
 
-            if ($article->status === KnowledgeArticleStatus::Archived) {
-                return $article;
-            }
-            $article->update(["status" => KnowledgeArticleStatus::Archived]);
+        if ($article->status === KnowledgeArticleStatus::Archived) {
+            $this->setRawAttributes($article->getAttributes(), true);
+            $this->unsetRelations();
 
-            KnowledgeArticleArchived::dispatch($article->id);
+            return;
+        }
+        $article->update(["status" => KnowledgeArticleStatus::Archived]);
 
-            return $article;
-        });
+        KnowledgeArticleArchived::dispatch($article->id);
 
         $this->setRawAttributes($article->getAttributes(), true);
         $this->unsetRelations();
@@ -138,20 +132,16 @@ class KnowledgeArticle extends Model
      */
     public function restore(): void
     {
-        $article = DB::transaction(function () {
-            $article = self::query()->lockForUpdate()->findOrFail($this->id);
+        $article = self::query()->findOrFail($this->id);
 
-            if ($article->status !== KnowledgeArticleStatus::Archived) {
-                throw new DomainException(
-                    "Only archived articles can be restored.",
-                );
-            }
-            $article->update(["status" => KnowledgeArticleStatus::Draft]);
+        if ($article->status !== KnowledgeArticleStatus::Archived) {
+            throw new DomainException(
+                "Only archived articles can be restored.",
+            );
+        }
+        $article->update(["status" => KnowledgeArticleStatus::Draft]);
 
-            KnowledgeArticleRestored::dispatch($article->id);
-
-            return $article;
-        });
+        KnowledgeArticleRestored::dispatch($article->id);
 
         $this->setRawAttributes($article->getAttributes(), true);
         $this->unsetRelations();
