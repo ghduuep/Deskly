@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Ticket\AddTicketMessage;
+use App\Actions\Ticket\AddInternalNote;
 use App\Events\Message\InternalNoteAdded;
 use App\Events\Message\MessageSent;
 use App\Events\Ticket\TicketAssigned;
@@ -107,9 +109,10 @@ it("can add a message to an existing ticket", function () {
     $ticket = Ticket::factory()->create();
     $contact = Contact::factory()->create();
 
-    $message = $ticket->addMessage(
+    $message = app(AddTicketMessage::class)->handle(
+        $ticket,
         $contact,
-        "Hello I need help",
+        "Need help!",
         MessageDirection::Inbound,
     );
 
@@ -122,7 +125,11 @@ it("can add an internal note to an existing ticket", function () {
     $ticket = Ticket::factory()->create();
     $contact = Contact::factory()->create();
 
-    $message = $ticket->addInternalNote($contact, "Hello I need help");
+    $message = app(AddInternalNote::class)->handle(
+        $ticket,
+        $contact,
+        "Need to check the customer's bill",
+    );
 
     expect($ticket->fresh()->messages)->toHaveCount(1);
     expect($message->author->is($contact))->toBeTrue();
@@ -311,7 +318,8 @@ it("dispatches an event when a message is added", function () {
 
     Event::fake([MessageSent::class]);
 
-    $message = $ticket->addMessage(
+    $message = app(AddTicketMessage::class)->handle(
+        $ticket,
         $contact,
         "I need help",
         MessageDirection::Inbound,
@@ -336,7 +344,11 @@ it("dispatches an event when an internal note is added", function () {
 
     Event::fake([InternalNoteAdded::class]);
 
-    $message = $ticket->addInternalNote($contact, "I need help");
+    $message = app(AddInternalNote::class)->handle(
+        $ticket,
+        $contact,
+        "I need help",
+    );
 
     expect($ticket->fresh()->messages)->toHaveCount(1);
     expect($message->author->is($contact))->toBeTrue();
