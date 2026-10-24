@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(["name", "description"])]
+#[Fillable(['name', 'description'])]
 class Group extends Model
 {
     /** @use HasFactory<GroupFactory> */
@@ -18,35 +18,30 @@ class Group extends Model
 
     public function addUser(User $user): void
     {
-        $group = self::query()->findOrFail($this->id);
-        $agent = User::query()->findOrFail($user->id);
-
-        if (!$agent->canBeAssignedTickets()) {
+        if (! $user->canBeAssignedTickets()) {
             throw new DomainException(
-                "Only agents and administrators can join groups.",
+                'Only agents and administrators can join groups.',
             );
         }
 
-        $group->users()->syncWithoutDetaching([$agent->id]);
+        $this->users()->syncWithoutDetaching([$user->id]);
     }
 
     public function removeUser(User $user): void
     {
-        $group = self::query()->findOrFail($this->id);
+        $member = $this->users()->whereKey($user->id)->exists();
 
-        $member = $group->users()->whereKey($user->id)->exists();
-
-        if (!$member) {
+        if (! $member) {
             return;
         }
 
-        $tickets = $group->tickets()->where("assigned_id", $user->id)->get();
+        $tickets = $this->tickets()->where('assigned_id', $user->id)->get();
 
         foreach ($tickets as $ticket) {
             $ticket->unassign();
         }
 
-        $group->users()->detach($user->id);
+        $this->users()->detach($user->id);
     }
 
     public function hasUser(User $user): bool
