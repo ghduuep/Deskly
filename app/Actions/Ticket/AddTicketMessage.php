@@ -2,7 +2,6 @@
 
 namespace App\Actions\Ticket;
 
-use App\Events\Message\MessageSent;
 use App\HtmlSanitizer;
 use App\MessageDirection;
 use App\MessageType;
@@ -11,8 +10,6 @@ use App\Models\Contact;
 use App\Models\Draft;
 use App\Models\Message;
 use App\Models\Ticket;
-use App\TicketStatus;
-use DomainException;
 use Illuminate\Support\Facades\DB;
 
 final class AddTicketMessage
@@ -27,6 +24,9 @@ final class AddTicketMessage
         Channel $channel,
         ?Draft $draft = null,
     ): Message {
+        // Prepare externally supplied content.
+        $content = $this->sanitizer->sanitize($content);
+
         return DB::transaction(function () use (
             $ticket,
             $author,
@@ -37,42 +37,12 @@ final class AddTicketMessage
         ) {
             $ticket = Ticket::query()->lockForUpdate()->findOrFail($ticket->id);
 
-            if ($ticket->status === TicketStatus::Closed) {
-                throw new DomainException(
-                    "Cannot add messages to a closed ticket.",
-                );
-            }
-
-            if ($ticket->status === TicketStatus::Resolved) {
-                if ($direction === MessageDirection::Outbound) {
-                    throw new DomainException(
-                        "Reopen the ticket before replying.",
-                    );
-                }
-                $ticket->reopen();
-            }
-
-            if (
-                $direction === MessageDirection::Inbound &&
-                $ticket->status === TicketStatus::Pending
-            ) {
-                $ticket->resume();
-            }
-
-            if (
-                $direction === MessageDirection::Outbound &&
-                $ticket->status === TicketStatus::Open
-            ) {
-                $ticket->pend();
-            }
-
-            $message = $ticket->messages()->create([
-                "contact_id" => $author->id,
-                "channel_id" => $channel->id,
-                "content" => $this->sanitizer->sanitize($content),
-                "type" => MessageType::Reply,
-                "direction" => $direction,
-            ]);
+            $message = $ticket->addReply(
+                $author,
+                $content,
+                $direction,
+                $channel,
+            );
 
             if ($draft !== null) {
                 Draft::query()
@@ -82,8 +52,6 @@ final class AddTicketMessage
                     ->where("type", MessageType::Reply->value)
                     ->delete();
             }
-
-            MessageSent::dispatch($message->id, $ticket->id);
 
             return $message;
         });

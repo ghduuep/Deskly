@@ -262,6 +262,65 @@ class Ticket extends Model
         TicketGroupChanged::dispatch($this->id, $previousGroupId, $group->id);
     }
 
+    public function addReply(
+        Contact $author,
+        string $content,
+        MessageDirection $direction,
+        Channel $channel,
+    ): Message {
+        if ($this->status === TicketStatus::Closed) {
+            throw new DomainException("Cannot reply to a closed ticket.");
+        }
+
+        if ($this->status === TicketStatus::Resolved) {
+            if ($direction === MessageDirection::Outbound) {
+                throw new DomainException("Reopen the ticket before replying.");
+            }
+        }
+
+        $message = $this->messages()->create([
+            "contact_id" => $author->id,
+            "channel_id" => $channel->id,
+            "content" => $content,
+            "type" => MessageType::Reply,
+            "direction" => $direction,
+        ]);
+
+        if ($direction === MessageDirection::Inbound) {
+            match ($this->status) {
+                TicketStatus::Resolved => $this->reopen(),
+                TicketStatus::Pending => $this->resume(),
+                default => null,
+            };
+        } elseif ($this->status === TicketStatus::Open) {
+            $this->pend();
+        }
+
+        MessageSent::dispatch($message->id, $this->id);
+
+        return $message;
+    }
+
+    public function addInternalNote(Contact $author, string $content): Message
+    {
+        if ($this->status === TicketStatus::Closed) {
+            throw new DomainException(
+                "Cannot add internal notes to a closed ticket.",
+            );
+        }
+
+        $message = $this->messages()->create([
+            "contact_id" => $author->id,
+            "content" => $content,
+            "type" => MessageType::Internal,
+            "direction" => null,
+        ]);
+
+        InternalNoteAdded::dispatch($message->id, $this->id);
+
+        return $message;
+    }
+
     public function requester(): BelongsTo
     {
         return $this->belongsTo(Contact::class, "contact_id");
