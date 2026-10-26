@@ -15,8 +15,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(["name", "email", "password", "role"])]
+#[Hidden(["password", "remember_token"])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -30,9 +30,9 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'role' => UserRole::class,
+            "email_verified_at" => "datetime",
+            "password" => "hashed",
+            "role" => UserRole::class,
         ];
     }
 
@@ -42,7 +42,7 @@ class User extends Authenticatable
             return;
         }
 
-        $this->update(['role' => $role]);
+        $this->update(["role" => $role]);
     }
 
     public function canBeAssignedTickets(): bool
@@ -63,11 +63,16 @@ class User extends Authenticatable
 
     public function assignedTickets(): HasMany
     {
-        return $this->hasMany(Ticket::class, 'assigned_id');
+        return $this->hasMany(Ticket::class, "assigned_id");
     }
 
     public function knowledgeArticles(): HasMany
     {
-        return $this->hasMany(KnowledgeArticle::class, 'author_id');
+        return $this->hasMany(KnowledgeArticle::class, "author_id");
+    }
+
+    public function drafts(): HasMany
+    {
+        return $this->hasMany(Draft::class);
     }
 }

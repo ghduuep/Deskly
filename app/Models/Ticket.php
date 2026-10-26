@@ -286,4 +286,9 @@ class Ticket extends Model
     {
         return $this->hasMany(Message::class);
     }
+
+    public function drafts(): HasMany
+    {
+        return $this->hasMany(Draft::class);
+    }
 }

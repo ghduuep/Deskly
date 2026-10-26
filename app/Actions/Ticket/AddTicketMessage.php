@@ -7,6 +7,7 @@ use App\HtmlSanitizer;
 use App\MessageDirection;
 use App\MessageType;
 use App\Models\Contact;
+use App\Models\Draft;
 use App\Models\Message;
 use App\Models\Ticket;
 use App\TicketStatus;
@@ -22,12 +23,14 @@ final class AddTicketMessage
         Contact $author,
         string $content,
         MessageDirection $direction,
+        ?Draft $draft = null,
     ): Message {
         return DB::transaction(function () use (
             $ticket,
             $author,
             $content,
             $direction,
+            $draft,
         ) {
             $ticket = Ticket::query()->lockForUpdate()->findOrFail($ticket->id);
 
@@ -66,6 +69,15 @@ final class AddTicketMessage
                 "type" => MessageType::Reply,
                 "direction" => $direction,
             ]);
+
+            if ($draft !== null) {
+                Draft::query()
+                    ->whereKey($draft->id)
+                    ->where("ticket_id", $ticket->id)
+                    ->where("user_id", $author->user_id)
+                    ->where("type", MessageType::Reply->value)
+                    ->delete();
+            }
 
             MessageSent::dispatch($message->id, $ticket->id);
 
