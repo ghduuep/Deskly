@@ -6,6 +6,7 @@ use App\Events\Message\MessageSent;
 use App\HtmlSanitizer;
 use App\MessageDirection;
 use App\MessageType;
+use App\Models\Channel;
 use App\Models\Contact;
 use App\Models\Draft;
 use App\Models\Message;
@@ -23,6 +24,7 @@ final class AddTicketMessage
         Contact $author,
         string $content,
         MessageDirection $direction,
+        Channel $channel,
         ?Draft $draft = null,
     ): Message {
         return DB::transaction(function () use (
@@ -30,6 +32,7 @@ final class AddTicketMessage
             $author,
             $content,
             $direction,
+            $channel,
             $draft,
         ) {
             $ticket = Ticket::query()->lockForUpdate()->findOrFail($ticket->id);
@@ -65,6 +68,7 @@ final class AddTicketMessage
 
             $message = $ticket->messages()->create([
                 "contact_id" => $author->id,
+                "channel_id" => $channel->id,
                 "content" => $this->sanitizer->sanitize($content),
                 "type" => MessageType::Reply,
                 "direction" => $direction,

@@ -8,6 +8,7 @@ use App\MessageType;
 use App\Models\Contact;
 use App\Models\Ticket;
 use App\TicketStatus;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 final class AddInternalNote

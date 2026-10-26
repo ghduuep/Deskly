@@ -11,6 +11,7 @@ use App\Events\Ticket\TicketReopened;
 use App\Events\Ticket\TicketResolved;
 use App\Events\Ticket\TicketUnassigned;
 use App\MessageDirection;
+use App\Models\Channel;
 use App\Models\Contact;
 use App\Models\Group;
 use App\Models\Ticket;
@@ -108,12 +109,14 @@ it("can unassign an agent from a ticket", function () {
 it("can add a message to an existing ticket", function () {
     $ticket = Ticket::factory()->create();
     $contact = Contact::factory()->create();
+    $channel = Channel::factory()->create();
 
     $message = app(AddTicketMessage::class)->handle(
         $ticket,
         $contact,
         "Need help!",
         MessageDirection::Inbound,
+        $channel,
     );
 
     expect($ticket->fresh()->messages)->toHaveCount(1);
@@ -136,6 +139,25 @@ it("can add an internal note to an existing ticket", function () {
     expect($message->ticket->is($ticket))->toBeTrue();
 });
 
+it("should not resume not pending tickets", function (TicketStatus $status) {
+    $ticket = Ticket::factory()->create([
+        "status" => $status,
+    ]);
+
+    expect(fn() => $ticket->resume())->toThrow(DomainException::class);
+})->with([
+    "closed tickets should not be resumed" => [TicketStatus::Closed],
+    "resolved tickets should not be resumed" => [TicketStatus::Resolved],
+]);
+
+it("should not reopen pending tickets", function () {
+    $ticket = Ticket::factory()->create([
+        "status" => TicketStatus::Pending,
+    ]);
+
+    expect(fn() => $ticket->reopen())->toThrow(DomainException::class);
+});
+
 it("should not mark as pending not open tickets", function (
     TicketStatus $status,
 ) {
@@ -148,6 +170,27 @@ it("should not mark as pending not open tickets", function (
     "resolved tickets cannot be pending" => [TicketStatus::Resolved],
     "closed tickets cannot be pending" => [TicketStatus::Closed],
 ]);
+
+it(
+    "should not allow assign an agent that doesn't belong to ticket's group",
+    function () {
+        $group = Group::factory()->create();
+        $ticket = Ticket::factory()->create();
+        $ticket->assignToGroup($group);
+        $agent = User::factory()->create([
+            "role" => UserRole::Agent,
+        ]);
+
+        Event::fake([TicketAssigned::class]);
+
+        expect(fn() => $ticket->assignTo($agent))->toThrow(
+            DomainException::class,
+        );
+
+        expect($ticket->fresh()->assigned_id)->toBeNull();
+        Event::assertNotDispatched(TicketAssigned::class);
+    },
+);
 
 it("should not resolve a closed ticket", function () {
     $ticket = Ticket::factory()->create([
@@ -315,7 +358,7 @@ it("dispatches an event when a ticket is reopened", function () {
 it("dispatches an event when a message is added", function () {
     $ticket = Ticket::factory()->create();
     $contact = Contact::factory()->create();
-
+    $channel = Channel::factory()->create();
     Event::fake([MessageSent::class]);
 
     $message = app(AddTicketMessage::class)->handle(
@@ -323,6 +366,7 @@ it("dispatches an event when a message is added", function () {
         $contact,
         "I need help",
         MessageDirection::Inbound,
+        $channel,
     );
 
     expect($ticket->fresh()->messages)->toHaveCount(1);
@@ -337,6 +381,47 @@ it("dispatches an event when a message is added", function () {
 
     Event::assertDispatchedOnce(MessageSent::class);
 });
+
+it(
+    "as group changes, removes the agent if they don't belong to that group",
+    function () {
+        $ticket = Ticket::factory()->create();
+        $agent = User::factory()->create([
+            "role" => UserRole::Agent,
+        ]);
+        $group = Group::factory()->create();
+        $group->addUser($agent);
+        $ticket->assignToGroup($group);
+        $ticket->assignTo($agent);
+
+        $newGroup = Group::factory()->create();
+
+        $ticket->assignToGroup($newGroup);
+
+        expect($ticket->fresh()->assigned_id)->toBeNull();
+    },
+);
+
+it(
+    "as group changes, keeps the agent if they belong to that group",
+    function () {
+        $ticket = Ticket::factory()->create();
+        $agent = User::factory()->create([
+            "role" => UserRole::Agent,
+        ]);
+        $group = Group::factory()->create();
+        $group->addUser($agent);
+        $ticket->assignToGroup($group);
+        $ticket->assignTo($agent);
+
+        $newGroup = Group::factory()->create();
+        $newGroup->addUser($agent);
+
+        $ticket->assignToGroup($newGroup);
+
+        expect($ticket->fresh()->assigned_id)->toBe($agent->id);
+    },
+);
 
 it("dispatches an event when an internal note is added", function () {
     $ticket = Ticket::factory()->create();
@@ -375,6 +460,18 @@ it("does not dispatch an event when adding the same priority", function () {
     $ticket->changePriority(TicketPriority::Urgent);
 
     Event::assertNotDispatched(TicketPriorityChanged::class);
+});
+it("does not dispatch an event when adding the same group", function () {
+    $group = Group::factory()->create();
+    $ticket = Ticket::factory()->create([
+        "group_id" => $group->id,
+    ]);
+
+    Event::fake([TicketGroupAssigned::class]);
+
+    $ticket->assignToGroup($group);
+
+    Event::assertNotDispatched(TicketGroupAssigned::class);
 });
 
 it(

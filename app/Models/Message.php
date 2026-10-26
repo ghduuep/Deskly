@@ -9,7 +9,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['content', 'type', 'direction', 'ticket_id', 'contact_id'])]
+#[Fillable([
+    "content",
+    "type",
+    "direction",
+    "ticket_id",
+    "contact_id",
+    "channel_id",
+])]
 class Message extends Model
 {
     use HasFactory;
@@ -17,8 +24,8 @@ class Message extends Model
     protected function casts(): array
     {
         return [
-            'type' => MessageType::class,
-            'direction' => MessageDirection::class,
+            "type" => MessageType::class,
+            "direction" => MessageDirection::class,
         ];
     }
 
@@ -34,6 +41,11 @@ class Message extends Model
 
     public function author(): BelongsTo
     {
-        return $this->belongsTo(Contact::class, 'contact_id');
+        return $this->belongsTo(Contact::class, "contact_id");
+    }
+
+    public function channel(): BelongsTo
+    {
+        return $this->belongsTo(Channel::class);
     }
 }

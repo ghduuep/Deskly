@@ -17,6 +17,11 @@ return new class extends Migration {
                 ->constrained("tickets")
                 ->cascadeOnDelete();
             $table->foreignId("contact_id")->constrained("contacts");
+            $table
+                ->foreignId("channel_id")
+                ->nullable()
+                ->constrained()
+                ->restrictOnDelete();
             $table->longText("content");
             $table->string("type");
             $table->string("direction")->nullable();
