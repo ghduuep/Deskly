@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\EmailAddressCast;
 use App\Casts\PhoneNumberCast;
+use App\ContactIdentityType;
 use App\Models\Concerns\HasTags;
 use App\ValueObjects\EmailAddress;
 use App\ValueObjects\PhoneNumber;
@@ -19,34 +20,25 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Contacts may originate from external communication channels
  * and do not required an associated authenticated user.
  */
-#[Fillable(['user_id', 'company_id', 'name', 'email', 'phone'])]
+#[Fillable(["user_id", "company_id", "name"])]
 class Contact extends Model
 {
     use HasFactory, HasTags;
 
-    protected function casts(): array
+    public function addEmailIdentity(EmailAddress $email): ContactIdentity
     {
-        return [
-            'email' => EmailAddressCast::class,
-            'phone' => PhoneNumberCast::class,
-        ];
+        return $this->identities()->create([
+            "type" => ContactIdentityType::Email,
+            "identifier" => (string) $email,
+        ]);
     }
 
-    public function changeEmail(EmailAddress $email): void
+    public function addWhatsappIdentity(PhoneNumber $phone): ContactIdentity
     {
-        if ($this->email?->equals($email) === true) {
-            return;
-        }
-
-        $this->update(['email' => $email]);
-    }
-
-    public function changePhone(PhoneNumber $phone): void
-    {
-        if ($this->phone?->equals($phone) === true) {
-            return;
-        }
-        $this->update(['phone' => $phone]);
+        return $this->identities()->create([
+            "type" => ContactIdentityType::Whatsapp,
+            "identifier" => (string) $phone,
+        ]);
     }
 
     public function assignToCompany(Company $company): void
@@ -54,7 +46,7 @@ class Contact extends Model
         if ($this->company_id === $company->id) {
             return;
         }
-        $this->update(['company_id' => $company->id]);
+        $this->update(["company_id" => $company->id]);
     }
 
     public function user(): BelongsTo
@@ -70,5 +62,10 @@ class Contact extends Model
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    public function identities(): HasMany
+    {
+        return $this->hasMany(ContactIdentity::class);
     }
 }
