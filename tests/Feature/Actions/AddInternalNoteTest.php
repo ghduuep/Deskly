@@ -1,221 +1,222 @@
 
 <?php
-use App\Actions\Ticket\AddTicketMessage;
-use App\Enum\MessageDirection;
+use App\Actions\Ticket\AddInternalNote;
 use App\Enum\MessageType;
 use App\Enum\TicketStatus;
 use App\Enum\UserRole;
-use App\Events\Message\MessageSent;
-use App\Events\Ticket\TicketPended;
-use App\Events\Ticket\TicketReopened;
-use App\Events\Ticket\TicketResumed;
-use App\Models\Channel;
+use App\Models\Attachment;
 use App\Models\Contact;
+use App\Models\Draft;
 use App\Models\Ticket;
 use App\Models\User;
-use Illuminate\Support\Facades\Event;
 
-it("pends an open ticket after an outbound reply", function () {
+it("moves draft attachments to an internal note", function () {
     $ticket = Ticket::factory()->create();
-    $author = Contact::factory()->create([
-        "user_id" => User::factory()->create(["role" => UserRole::Agent])->id,
-    ]);
-    $channel = Channel::factory()->create();
 
-    Event::fake([TicketPended::class, MessageSent::class]);
-
-    $message = app(AddTicketMessage::class)->handle(
-        $ticket,
-        $author,
-        "Test message",
-        MessageDirection::Outbound,
-        $channel,
-    );
-
-    expect($ticket->fresh()->status)
-        ->toBe(TicketStatus::Pending)
-        ->and($message->type)
-        ->toBe(MessageType::Reply)
-        ->and($message->direction)
-        ->toBe(MessageDirection::Outbound);
-
-    Event::assertDispatchedOnce(TicketPended::class);
-    Event::assertDispatchedOnce(MessageSent::class);
-});
-
-it("resumes a pending ticket after an inbound reply", function () {
-    $ticket = Ticket::factory()->create([
-        "status" => TicketStatus::Pending,
-    ]);
-
-    $author = $ticket->requester;
-    $channel = Channel::factory()->create();
-
-    Event::fake([TicketResumed::class]);
-
-    app(AddTicketMessage::class)->handle(
-        $ticket,
-        $author,
-        "Test message",
-        MessageDirection::Inbound,
-        $channel,
-    );
-
-    expect($ticket->fresh()->status)->toBe(TicketStatus::Open);
-
-    Event::assertDispatchedOnce(TicketResumed::class);
-});
-
-it("reopens a resolved ticket after an inbound reply", function () {
-    $ticket = Ticket::factory()->create([
-        "status" => TicketStatus::Resolved,
-    ]);
-
-    $author = $ticket->requester;
-    $channel = Channel::factory()->create();
-
-    Event::fake([TicketReopened::class]);
-
-    app(AddTicketMessage::class)->handle(
-        $ticket,
-        $author,
-        "Test message",
-        MessageDirection::Inbound,
-        $channel,
-    );
-
-    expect($ticket->fresh()->status)->toBe(TicketStatus::Open);
-
-    Event::assertDispatchedOnce(TicketReopened::class);
-});
-
-it("rejects outbound replies on resolved tickets", function () {
-    $ticket = Ticket::factory()->create([
-        "status" => TicketStatus::Resolved,
+    $user = User::factory()->create([
+        "role" => UserRole::Admin,
     ]);
 
     $author = Contact::factory()->create([
-        "user_id" => User::factory()->create(["role" => UserRole::Agent])->id,
+        "user_id" => $user->id,
     ]);
-    $channel = Channel::factory()->create();
 
-    Event::fake([MessageSent::class]);
+    $draft = Draft::factory()->create([
+        "ticket_id" => $ticket->id,
+        "user_id" => $user->id,
+        "type" => MessageType::Internal,
+    ]);
 
-    expect(
-        fn() => app(AddTicketMessage::class)->handle(
-            $ticket,
-            $author,
-            "Test message",
-            MessageDirection::Outbound,
-            $channel,
-        ),
-    )->toThrow(DomainException::class);
+    $attachment = Attachment::factory()->create([
+        "uploaded_by_id" => $user->id,
+    ]);
 
-    expect($ticket->fresh()->status)
-        ->toBe(TicketStatus::Resolved)
-        ->and($ticket->messages()->count())
-        ->toBe(0);
+    $attachment->attachTo($draft);
 
-    Event::assertNotDispatched(MessageSent::class);
+    $message = app(AddInternalNote::class)->handle(
+        $ticket,
+        $author,
+        "Internal note",
+        $draft,
+    );
+
+    expect($message->type)
+        ->toBe(MessageType::Internal)
+        ->and($attachment->fresh()->attachable_type)
+        ->toBe($message->getMorphClass())
+        ->and($attachment->fresh()->attachable_id)
+        ->toBe($message->id)
+        ->and(Draft::find($draft->id))
+        ->toBeNull();
 });
 
-it("rejects replies on closed tickets", function () {
-    $ticket = Ticket::factory()->create([
-        "status" => TicketStatus::Closed,
+it("rejects a draft owned by another user", function () {
+    $ticket = Ticket::factory()->create();
+
+    $user = User::factory()->create([
+        "role" => UserRole::Admin,
     ]);
 
-    $author = $ticket->requester;
-    $channel = Channel::factory()->create();
+    $otherUser = User::factory()->create();
 
-    Event::fake([MessageSent::class]);
+    $author = Contact::factory()->create([
+        "user_id" => $user->id,
+    ]);
+
+    $draft = Draft::factory()->create([
+        "ticket_id" => $ticket->id,
+        "user_id" => $otherUser->id,
+        "type" => MessageType::Internal,
+    ]);
 
     expect(
-        fn() => app(AddTicketMessage::class)->handle(
+        fn() => app(AddInternalNote::class)->handle(
             $ticket,
             $author,
-            "Test message",
-            MessageDirection::Inbound,
-            $channel,
+            "Internal note",
+            $draft,
         ),
     )->toThrow(DomainException::class);
 
     expect($ticket->messages()->count())
         ->toBe(0)
-        ->and($ticket->fresh()->status)
-        ->toBe(TicketStatus::Closed);
-
-    Event::assertNotDispatched(MessageSent::class);
+        ->and($draft->fresh())
+        ->not->toBeNull();
 });
 
-it(
-    "does not change status for an inbound reply on an open ticket",
-    function () {
-        $ticket = Ticket::factory()->create();
-        $author = $ticket->requester;
-        $channel = Channel::factory()->create();
+it("rejects a reply draft for an internal note", function () {
+    $ticket = Ticket::factory()->create();
 
-        Event::fake([
-            TicketPended::class,
-            TicketResumed::class,
-            TicketReopened::class,
-        ]);
+    $user = User::factory()->create([
+        "role" => UserRole::Admin,
+    ]);
 
-        app(AddTicketMessage::class)->handle(
+    $author = Contact::factory()->create([
+        "user_id" => $user->id,
+    ]);
+
+    $draft = Draft::factory()->create([
+        "ticket_id" => $ticket->id,
+        "user_id" => $user->id,
+        "type" => MessageType::Reply,
+    ]);
+
+    expect(
+        fn() => app(AddInternalNote::class)->handle(
             $ticket,
             $author,
-            "Test message",
-            MessageDirection::Inbound,
-            $channel,
-        );
+            "Internal note",
+            $draft,
+        ),
+    )->toThrow(DomainException::class);
 
-        expect($ticket->fresh()->status)->toBe(TicketStatus::Open);
-
-        Event::assertNotDispatched(TicketPended::class);
-        Event::assertNotDispatched(TicketResumed::class);
-        Event::assertNotDispatched(TicketReopened::class);
-    },
-);
-
-it("sanitizes malicious HTML while preserving formatting", function () {
-    $ticket = Ticket::factory()->create();
-    $author = $ticket->requester;
-    $channel = Channel::factory()->create();
-
-    $message = app(AddTicketMessage::class)->handle(
-        $ticket,
-        $author,
-        "<p>Hello <strong>world</strong></p><script>alert(1)</script>",
-        MessageDirection::Inbound,
-        $channel,
-    );
-
-    expect($message->fresh()->content)
-        ->toContain("<strong>world</strong>")
-        ->not->toContain("<script")
-        ->not->toContain("alert(1)");
+    expect($ticket->messages()->count())
+        ->toBe(0)
+        ->and($draft->fresh())
+        ->not->toBeNull();
 });
 
-it("dispatches MessageSent exactly once", function () {
+it("rejects a draft belonging to another ticket", function () {
     $ticket = Ticket::factory()->create();
-    $author = $ticket->requester;
-    $channel = Channel::factory()->create();
+    $otherTicket = Ticket::factory()->create();
 
-    Event::fake([MessageSent::class]);
+    $user = User::factory()->create([
+        "role" => UserRole::Admin,
+    ]);
 
-    $message = app(AddTicketMessage::class)->handle(
+    $author = Contact::factory()->create([
+        "user_id" => $user->id,
+    ]);
+
+    $draft = Draft::factory()->create([
+        "ticket_id" => $otherTicket->id,
+        "user_id" => $user->id,
+        "type" => MessageType::Internal,
+    ]);
+
+    expect(
+        fn() => app(AddInternalNote::class)->handle(
+            $ticket,
+            $author,
+            "Internal note",
+            $draft,
+        ),
+    )->toThrow(DomainException::class);
+
+    expect($ticket->messages()->count())
+        ->toBe(0)
+        ->and($draft->fresh())
+        ->not->toBeNull();
+});
+
+it("preserves the draft when internal note creation fails", function () {
+    $ticket = Ticket::factory()->create([
+        "status" => TicketStatus::Closed,
+    ]);
+
+    $user = User::factory()->create([
+        "role" => UserRole::Admin,
+    ]);
+
+    $author = Contact::factory()->create([
+        "user_id" => $user->id,
+    ]);
+
+    $draft = Draft::factory()->create([
+        "ticket_id" => $ticket->id,
+        "user_id" => $user->id,
+        "type" => MessageType::Internal,
+    ]);
+
+    $attachment = Attachment::factory()->create([
+        "uploaded_by_id" => $user->id,
+    ]);
+
+    $attachment->attachTo($draft);
+
+    expect(
+        fn() => app(AddInternalNote::class)->handle(
+            $ticket,
+            $author,
+            "Internal note",
+            $draft,
+        ),
+    )->toThrow(DomainException::class);
+
+    expect($ticket->messages()->count())
+        ->toBe(0)
+        ->and($draft->fresh())
+        ->not->toBeNull()
+        ->and($attachment->fresh()->attachable_type)
+        ->toBe($draft->getMorphClass())
+        ->and($attachment->fresh()->attachable_id)
+        ->toBe($draft->id);
+});
+
+it("creates an internal note without a draft", function () {
+    $ticket = Ticket::factory()->create();
+
+    $user = User::factory()->create([
+        "role" => UserRole::Admin,
+    ]);
+
+    $author = Contact::factory()->create([
+        "user_id" => $user->id,
+    ]);
+
+    $message = app(AddInternalNote::class)->handle(
         $ticket,
         $author,
-        "Test message",
-        MessageDirection::Inbound,
-        $channel,
+        "Internal note without attachments",
     );
 
-    Event::assertDispatched(
-        MessageSent::class,
-        fn(MessageSent $event) => $event->messageId === $message->id &&
-            $event->ticketId === $ticket->id,
-    );
-
-    Event::assertDispatchedOnce(MessageSent::class);
+    expect($message->type)
+        ->toBe(MessageType::Internal)
+        ->and($message->ticket_id)
+        ->toBe($ticket->id)
+        ->and($message->attachments()->count())
+        ->toBe(0)
+        ->and($ticket->messages()->count())
+        ->toBe(1);
 });
 
