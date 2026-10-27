@@ -1,14 +1,14 @@
-
 <?php
+
 use App\Actions\Ticket\AddTicketMessage;
-use App\MessageDirection;
-use App\MessageType;
+use App\Enum\MessageDirection;
+use App\Enum\MessageType;
+use App\Enum\TicketStatus;
 use App\Models\Channel;
 use App\Models\Contact;
 use App\Models\Draft;
 use App\Models\Ticket;
 use App\Models\User;
-use App\TicketStatus;
 
 beforeEach(function () {
     $this->channel = Channel::factory()->create();
@@ -51,7 +51,7 @@ it("allows different users to have drafts on the same ticket", function () {
 
 it("deletes the draft after successfully sending a reply", function () {
     $ticket = Ticket::factory()->create();
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
 
     $draft = Draft::create([
         "ticket_id" => $ticket->id,
@@ -80,7 +80,7 @@ it("preserves the draft when sending fails", function () {
         "status" => TicketStatus::Closed,
     ]);
 
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
 
     $draft = Draft::create([
         "ticket_id" => $ticket->id,
@@ -106,34 +106,82 @@ it("preserves the draft when sending fails", function () {
         ->toBe(0);
 });
 
-it("does not delete another user's draft", function () {
-    $ticket = Ticket::factory()->create();
-    $author = Contact::factory()->create();
-    $otherUser = User::factory()->create();
-
-    $draft = Draft::create([
-        "ticket_id" => $ticket->id,
-        "user_id" => $otherUser->id,
-        "type" => MessageType::Reply,
-        "content" => "Another user's draft",
+it("transfers draft attachments to the sent message", function () {
+    $agent = User::factory()->create([
+        "role" => \App\Enum\UserRole::Agent,
     ]);
 
-    app(AddTicketMessage::class)->handle(
+    $author = Contact::factory()->create([
+        "user_id" => $agent->id,
+    ]);
+
+    $ticket = Ticket::factory()->create();
+
+    $draft = Draft::factory()->create([
+        "ticket_id" => $ticket->id,
+        "user_id" => $agent->id,
+        "type" => MessageType::Reply,
+    ]);
+
+    $attachment = \App\Models\Attachment::factory()->create([
+        "uploaded_by_id" => $agent->id,
+    ]);
+
+    $attachment->attachTo($draft);
+
+    $message = app(AddTicketMessage::class)->handle(
         $ticket,
         $author,
-        "Sent message",
-        MessageDirection::Inbound,
+        "Reply with attachment",
+        MessageDirection::Outbound,
         $this->channel,
         $draft,
     );
 
-    expect(Draft::find($draft->id))->not->toBeNull();
+    expect($draft->fresh())
+        ->toBeNull()
+        ->and($message->attachments()->count())
+        ->toBe(1)
+        ->and($attachment->fresh()->attachable_type)
+        ->toBe($message->getMorphClass())
+        ->and($attachment->fresh()->attachable_id)
+        ->toBe($message->id);
+});
+
+it("rejects a draft belonging to another user", function () {
+    $ticket = Ticket::factory()->create();
+
+    $author = $ticket->requester;
+
+    $otherUser = User::factory()->create();
+
+    $draft = Draft::factory()->create([
+        "ticket_id" => $ticket->id,
+        "user_id" => $otherUser->id,
+        "type" => MessageType::Reply,
+    ]);
+
+    expect(
+        fn() => app(AddTicketMessage::class)->handle(
+            $ticket,
+            $author,
+            "Sent message",
+            MessageDirection::Inbound,
+            $this->channel,
+            $draft,
+        ),
+    )->toThrow(DomainException::class);
+
+    expect($draft->fresh())
+        ->not->toBeNull()
+        ->and($ticket->messages()->count())
+        ->toBe(0);
 });
 
 it("does not delete a draft belonging to another ticket", function () {
     $ticket = Ticket::factory()->create();
     $otherTicket = Ticket::factory()->create();
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
 
     $draft = Draft::create([
         "ticket_id" => $otherTicket->id,
@@ -142,21 +190,27 @@ it("does not delete a draft belonging to another ticket", function () {
         "content" => "Another ticket's draft",
     ]);
 
-    app(AddTicketMessage::class)->handle(
-        $ticket,
-        $author,
-        "Sent message",
-        MessageDirection::Inbound,
-        $this->channel,
-        $draft,
+    expect(
+        fn() => app(AddTicketMessage::class)->handle(
+            $ticket,
+            $author,
+            "Sent message",
+            MessageDirection::Inbound,
+            $this->channel,
+            $draft,
+        ),
+    )->toThrow(
+        DomainException::class,
+        "The draft does not belong to this user or ticket.",
     );
 
-    expect(Draft::find($draft->id))->not->toBeNull();
+    $this->assertModelExists($draft);
+    expect($ticket->messages()->count())->toBe(0);
 });
 
 it("does not delete a draft with a different message type", function () {
     $ticket = Ticket::factory()->create();
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
 
     $draft = Draft::create([
         "ticket_id" => $ticket->id,
@@ -165,22 +219,28 @@ it("does not delete a draft with a different message type", function () {
         "content" => "Internal draft",
     ]);
 
-    app(AddTicketMessage::class)->handle(
-        $ticket,
-        $author,
-        "Sent message",
-        MessageDirection::Inbound,
-        $this->channel,
-        $draft,
+    expect(
+        fn() => app(AddTicketMessage::class)->handle(
+            $ticket,
+            $author,
+            "Sent message",
+            MessageDirection::Inbound,
+            $this->channel,
+            $draft,
+        ),
+    )->toThrow(
+        DomainException::class,
+        "The draft does not belong to this user or ticket.",
     );
 
-    expect(Draft::find($draft->id))->not->toBeNull();
+    $this->assertModelExists($draft);
+    expect($ticket->messages()->count())->toBe(0);
 });
 
 it("deletes only the selected draft", function () {
     $ticket = Ticket::factory()->create();
     $otherTicket = Ticket::factory()->create();
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
 
     $selectedDraft = Draft::create([
         "ticket_id" => $ticket->id,
@@ -210,4 +270,3 @@ it("deletes only the selected draft", function () {
         ->and(Draft::find($otherDraft->id))
         ->not->toBeNull();
 });
-

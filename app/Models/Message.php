@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\MessageDirection;
-use App\MessageType;
-use App\TicketStatus;
+use App\Enum\MessageDirection;
+use App\Enum\MessageType;
+use App\Enum\TicketStatus;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

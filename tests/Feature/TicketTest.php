@@ -1,7 +1,11 @@
 <?php
 
-use App\Actions\Ticket\AddTicketMessage;
 use App\Actions\Ticket\AddInternalNote;
+use App\Actions\Ticket\AddTicketMessage;
+use App\Enum\MessageDirection;
+use App\Enum\TicketPriority;
+use App\Enum\TicketStatus;
+use App\Enum\UserRole;
 use App\Events\Message\InternalNoteAdded;
 use App\Events\Message\MessageSent;
 use App\Events\Ticket\TicketAssigned;
@@ -10,15 +14,11 @@ use App\Events\Ticket\TicketPriorityChanged;
 use App\Events\Ticket\TicketReopened;
 use App\Events\Ticket\TicketResolved;
 use App\Events\Ticket\TicketUnassigned;
-use App\MessageDirection;
 use App\Models\Channel;
 use App\Models\Contact;
 use App\Models\Group;
 use App\Models\Ticket;
 use App\Models\User;
-use App\TicketPriority;
-use App\TicketStatus;
-use App\UserRole;
 use Illuminate\Support\Facades\Event;
 
 it("can resolve an open ticket", function () {
@@ -108,7 +108,7 @@ it("can unassign an agent from a ticket", function () {
 
 it("can add a message to an existing ticket", function () {
     $ticket = Ticket::factory()->create();
-    $contact = Contact::factory()->create();
+    $contact = $ticket->requester;
     $channel = Channel::factory()->create();
 
     $message = app(AddTicketMessage::class)->handle(
@@ -126,7 +126,11 @@ it("can add a message to an existing ticket", function () {
 
 it("can add an internal note to an existing ticket", function () {
     $ticket = Ticket::factory()->create();
-    $contact = Contact::factory()->create();
+    $agent = User::factory()->create(["role" => UserRole::Agent]);
+    $contact = Contact::factory()->create(["user_id" => $agent->id]);
+    $group = Group::factory()->create();
+    $group->addUser($agent);
+    $ticket->assignToGroup($group);
 
     $message = app(AddInternalNote::class)->handle(
         $ticket,
@@ -137,6 +141,134 @@ it("can add an internal note to an existing ticket", function () {
     expect($ticket->fresh()->messages)->toHaveCount(1);
     expect($message->author->is($contact))->toBeTrue();
     expect($message->ticket->is($ticket))->toBeTrue();
+});
+
+it("rejects inbound replies from other contacts", function () {
+    $ticket = Ticket::factory()->create();
+
+    $author = Contact::factory()->create();
+
+    $channel = Channel::factory()->create();
+
+    expect(
+        fn() => $ticket->addReply(
+            $author,
+            "Hello!",
+            MessageDirection::Inbound,
+            $channel,
+        ),
+    )->toThrow(DomainException::class);
+
+    expect($ticket->messages()->count())->toBe(0);
+});
+
+it("rejects outbound replies from customers", function () {
+    $ticket = Ticket::factory()->create();
+
+    $customer = User::factory()->create([
+        "role" => UserRole::Customer,
+    ]);
+
+    $author = Contact::factory()->create([
+        "user_id" => $customer->id,
+    ]);
+
+    $channel = Channel::factory()->create();
+
+    expect(
+        fn() => $ticket->addReply(
+            $author,
+            "Hello!",
+            MessageDirection::Outbound,
+            $channel,
+        ),
+    )->toThrow(DomainException::class);
+
+    expect($ticket->messages()->count())->toBe(0);
+});
+
+it("allows an agent in the ticket group to add an internal note", function () {
+    Event::fake();
+
+    $agent = User::factory()->create([
+        "role" => UserRole::Agent,
+    ]);
+
+    $contact = Contact::factory()->create([
+        "user_id" => $agent->id,
+    ]);
+
+    $group = Group::factory()->create();
+    $group->addUser($agent);
+
+    $ticket = Ticket::factory()->create([
+        "group_id" => $group->id,
+    ]);
+
+    $message = $ticket->addInternalNote($contact, "Internal note");
+
+    expect($message->isInternal())
+        ->toBeTrue()
+        ->and($ticket->messages()->count())
+        ->toBe(1);
+});
+
+it("rejects internal notes from customers", function () {
+    $customer = User::factory()->create([
+        "role" => UserRole::Customer,
+    ]);
+
+    $contact = Contact::factory()->create([
+        "user_id" => $customer->id,
+    ]);
+
+    $ticket = Ticket::factory()->create();
+
+    expect(fn() => $ticket->addInternalNote($contact, "Note"))->toThrow(
+        DomainException::class,
+    );
+
+    expect($ticket->messages()->count())->toBe(0);
+});
+
+it("rejects internal notes from agents outside the ticket group", function () {
+    $agent = User::factory()->create([
+        "role" => UserRole::Agent,
+    ]);
+
+    $contact = Contact::factory()->create([
+        "user_id" => $agent->id,
+    ]);
+
+    $group = Group::factory()->create();
+
+    $ticket = Ticket::factory()->create([
+        "group_id" => $group->id,
+    ]);
+
+    expect(fn() => $ticket->addInternalNote($contact, "Note"))->toThrow(
+        DomainException::class,
+    );
+
+    expect($ticket->messages()->count())->toBe(0);
+});
+
+it("allows administrators to add internal notes", function () {
+    Event::fake();
+
+    $admin = User::factory()->create([
+        "role" => UserRole::Admin,
+    ]);
+
+    $contact = Contact::factory()->create([
+        "user_id" => $admin->id,
+    ]);
+
+    $ticket = Ticket::factory()->create();
+
+    $message = $ticket->addInternalNote($contact, "Admin note");
+
+    expect($message->isInternal())->toBeTrue();
 });
 
 it("should not resume not pending tickets", function (TicketStatus $status) {
@@ -357,7 +489,7 @@ it("dispatches an event when a ticket is reopened", function () {
 
 it("dispatches an event when a message is added", function () {
     $ticket = Ticket::factory()->create();
-    $contact = Contact::factory()->create();
+    $contact = $ticket->requester;
     $channel = Channel::factory()->create();
     Event::fake([MessageSent::class]);
 
@@ -425,7 +557,11 @@ it(
 
 it("dispatches an event when an internal note is added", function () {
     $ticket = Ticket::factory()->create();
-    $contact = Contact::factory()->create();
+    $agent = User::factory()->create(["role" => UserRole::Agent]);
+    $contact = Contact::factory()->create(["user_id" => $agent->id]);
+    $group = Group::factory()->create();
+    $group->addUser($agent);
+    $ticket->assignToGroup($group);
 
     Event::fake([InternalNoteAdded::class]);
 

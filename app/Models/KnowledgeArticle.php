@@ -7,7 +7,7 @@ use App\Events\KnowledgeArticle\KnowledgeArticleArchived;
 use App\Events\KnowledgeArticle\KnowledgeArticlePublished;
 use App\Events\KnowledgeArticle\KnowledgeArticleRestored;
 use App\Events\KnowledgeArticle\KnowledgeArticleUnpublished;
-use App\KnowledgeArticleStatus;
+use App\Enum\KnowledgeArticleStatus;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

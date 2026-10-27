@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\ChannelType;
+use App\Enum\ChannelType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

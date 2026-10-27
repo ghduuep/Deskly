@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Ticket;
 
-use App\TicketPriority;
+use App\Enum\TicketPriority;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

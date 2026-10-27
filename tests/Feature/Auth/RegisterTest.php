@@ -1,8 +1,8 @@
 <?php
 
-use App\ContactIdentityType;
+use App\Enum\ContactIdentityType;
 use App\Models\User;
-use App\UserRole;
+use App\Enum\UserRole;
 use Illuminate\Support\Facades\Hash;
 
 it("registers a new customer", function () {

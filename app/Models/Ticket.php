@@ -13,19 +13,18 @@ use App\Events\Ticket\TicketReopened;
 use App\Events\Ticket\TicketResolved;
 use App\Events\Ticket\TicketResumed;
 use App\Events\Ticket\TicketUnassigned;
-use App\HtmlSanitizer;
-use App\MessageDirection;
-use App\MessageType;
+use App\Enum\MessageDirection;
+use App\Enum\MessageType;
 use App\Models\Concerns\HasTags;
-use App\TicketPriority;
-use App\TicketStatus;
+use App\Enum\TicketPriority;
+use App\Enum\TicketStatus;
+use App\Enum\UserRole;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use InvalidArgumentException;
 
 #[Fillable([
     "title",
@@ -278,6 +277,24 @@ class Ticket extends Model
             }
         }
 
+        if (
+            $direction === MessageDirection::Inbound &&
+            !$this->requester->is($author)
+        ) {
+            throw new DomainException(
+                "Only the ticket requester can send inbound messages.",
+            );
+        }
+
+        if (
+            $direction === MessageDirection::Outbound &&
+            !$author->user?->canBeAssignedTickets()
+        ) {
+            throw new DomainException(
+                "Only agents and administrators can send outbound messages.",
+            );
+        }
+
         $message = $this->messages()->create([
             "contact_id" => $author->id,
             "channel_id" => $channel->id,
@@ -306,6 +323,20 @@ class Ticket extends Model
         if ($this->status === TicketStatus::Closed) {
             throw new DomainException(
                 "Cannot add internal notes to a closed ticket.",
+            );
+        }
+
+        $user = $author->user;
+
+        if (!$user?->canBeAssignedTickets()) {
+            throw new DomainException(
+                "Only agents and administrators can add internal notes.",
+            );
+        }
+
+        if ($user->role !== UserRole::Admin && !$this->group?->hasUser($user)) {
+            throw new DomainException(
+                "The agent must belong to the ticket group.",
             );
         }
 

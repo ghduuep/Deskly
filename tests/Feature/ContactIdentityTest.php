@@ -1,6 +1,6 @@
 <?php
 
-use App\ContactIdentityType;
+use App\Enum\ContactIdentityType;
 use App\Models\Contact;
 use App\Models\ContactIdentity;
 

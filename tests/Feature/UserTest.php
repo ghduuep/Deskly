@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-use App\UserRole;
+use App\Enum\UserRole;
 
 it("should change user's role", function () {
     $user = User::factory()->create();

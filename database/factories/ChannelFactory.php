@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\ChannelType;
+use App\Enum\ChannelType;
 use App\Models\Channel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

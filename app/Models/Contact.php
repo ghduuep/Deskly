@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-use App\Casts\EmailAddressCast;
-use App\Casts\PhoneNumberCast;
-use App\ContactIdentityType;
+use App\Enum\ContactIdentityType;
 use App\Models\Concerns\HasTags;
 use App\ValueObjects\EmailAddress;
 use App\ValueObjects\PhoneNumber;

@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Ticket;
 
 use App\Models\Ticket;
-use App\UserRole;
+use App\Enum\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

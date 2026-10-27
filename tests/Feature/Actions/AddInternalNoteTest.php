@@ -1,21 +1,25 @@
 
 <?php
 use App\Actions\Ticket\AddTicketMessage;
+use App\Enum\MessageDirection;
+use App\Enum\MessageType;
+use App\Enum\TicketStatus;
+use App\Enum\UserRole;
 use App\Events\Message\MessageSent;
 use App\Events\Ticket\TicketPended;
 use App\Events\Ticket\TicketReopened;
 use App\Events\Ticket\TicketResumed;
-use App\MessageDirection;
-use App\MessageType;
 use App\Models\Channel;
 use App\Models\Contact;
 use App\Models\Ticket;
-use App\TicketStatus;
+use App\Models\User;
 use Illuminate\Support\Facades\Event;
 
 it("pends an open ticket after an outbound reply", function () {
     $ticket = Ticket::factory()->create();
-    $author = Contact::factory()->create();
+    $author = Contact::factory()->create([
+        "user_id" => User::factory()->create(["role" => UserRole::Agent])->id,
+    ]);
     $channel = Channel::factory()->create();
 
     Event::fake([TicketPended::class, MessageSent::class]);
@@ -44,7 +48,7 @@ it("resumes a pending ticket after an inbound reply", function () {
         "status" => TicketStatus::Pending,
     ]);
 
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
     $channel = Channel::factory()->create();
 
     Event::fake([TicketResumed::class]);
@@ -67,7 +71,7 @@ it("reopens a resolved ticket after an inbound reply", function () {
         "status" => TicketStatus::Resolved,
     ]);
 
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
     $channel = Channel::factory()->create();
 
     Event::fake([TicketReopened::class]);
@@ -90,7 +94,9 @@ it("rejects outbound replies on resolved tickets", function () {
         "status" => TicketStatus::Resolved,
     ]);
 
-    $author = Contact::factory()->create();
+    $author = Contact::factory()->create([
+        "user_id" => User::factory()->create(["role" => UserRole::Agent])->id,
+    ]);
     $channel = Channel::factory()->create();
 
     Event::fake([MessageSent::class]);
@@ -118,7 +124,7 @@ it("rejects replies on closed tickets", function () {
         "status" => TicketStatus::Closed,
     ]);
 
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
     $channel = Channel::factory()->create();
 
     Event::fake([MessageSent::class]);
@@ -145,7 +151,7 @@ it(
     "does not change status for an inbound reply on an open ticket",
     function () {
         $ticket = Ticket::factory()->create();
-        $author = Contact::factory()->create();
+        $author = $ticket->requester;
         $channel = Channel::factory()->create();
 
         Event::fake([
@@ -172,7 +178,7 @@ it(
 
 it("sanitizes malicious HTML while preserving formatting", function () {
     $ticket = Ticket::factory()->create();
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
     $channel = Channel::factory()->create();
 
     $message = app(AddTicketMessage::class)->handle(
@@ -191,7 +197,7 @@ it("sanitizes malicious HTML while preserving formatting", function () {
 
 it("dispatches MessageSent exactly once", function () {
     $ticket = Ticket::factory()->create();
-    $author = Contact::factory()->create();
+    $author = $ticket->requester;
     $channel = Channel::factory()->create();
 
     Event::fake([MessageSent::class]);

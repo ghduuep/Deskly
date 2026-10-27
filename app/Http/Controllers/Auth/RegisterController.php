@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\UserRole;
+use App\Enum\UserRole;
 use App\ValueObjects\EmailAddress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;

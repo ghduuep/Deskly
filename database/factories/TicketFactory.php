@@ -4,8 +4,8 @@ namespace Database\Factories;
 
 use App\Models\Contact;
 use App\Models\Ticket;
-use App\TicketPriority;
-use App\TicketStatus;
+use App\Enum\TicketPriority;
+use App\Enum\TicketStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

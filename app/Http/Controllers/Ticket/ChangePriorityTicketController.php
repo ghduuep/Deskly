@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Ticket\ChangeTicketPriorityRequest;
 use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
-use App\TicketPriority;
+use App\Enum\TicketPriority;
 
 class ChangePriorityTicketController extends Controller
 {

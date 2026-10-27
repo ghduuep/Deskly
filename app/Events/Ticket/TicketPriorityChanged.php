@@ -2,7 +2,7 @@
 
 namespace App\Events\Ticket;
 
-use App\TicketPriority;
+use App\Enum\TicketPriority;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;

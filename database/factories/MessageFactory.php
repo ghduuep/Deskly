@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\MessageDirection;
-use App\MessageType;
+use App\Enum\MessageDirection;
+use App\Enum\MessageType;
 use App\Models\Contact;
 use App\Models\Message;
 use App\Models\Ticket;

@@ -1,7 +1,7 @@
 <?php
 
-use App\TicketPriority;
-use App\TicketStatus;
+use App\Enum\TicketPriority;
+use App\Enum\TicketStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

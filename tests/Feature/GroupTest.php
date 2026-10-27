@@ -3,7 +3,7 @@
 use App\Models\Group;
 use App\Models\Ticket;
 use App\Models\User;
-use App\UserRole;
+use App\Enum\UserRole;
 
 it("can have multiple users", function () {
     $group = Group::factory()->create();

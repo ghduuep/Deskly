@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\MessageType;
+use App\Enum\MessageType;
 use App\Models\Draft;
 use App\Models\Ticket;
 use App\Models\User;

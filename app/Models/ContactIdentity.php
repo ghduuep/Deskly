@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\ContactIdentityType;
+use App\Enum\ContactIdentityType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
