@@ -4,10 +4,13 @@ namespace App\Models;
 
 use App\MessageDirection;
 use App\MessageType;
+use App\TicketStatus;
+use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
     "content",
@@ -29,6 +32,23 @@ class Message extends Model
         ];
     }
 
+    public function addAttachment(Attachment $attachment): void
+    {
+        if (!$this->exists) {
+            throw new DomainException(
+                "Message must be persisted before attaching files.",
+            );
+        }
+
+        if ($this->ticket->status === TicketStatus::Closed) {
+            throw new DomainException(
+                "Cannot add attachments to a closed ticket.",
+            );
+        }
+
+        $attachment->attachTo($this);
+    }
+
     public function isInternal(): bool
     {
         return $this->type === MessageType::Internal;
@@ -47,5 +67,10 @@ class Message extends Model
     public function channel(): BelongsTo
     {
         return $this->belongsTo(Channel::class);
+    }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, "attachable");
     }
 }

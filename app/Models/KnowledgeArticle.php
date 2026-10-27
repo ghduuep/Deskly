@@ -13,15 +13,16 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
-    'knowledge_category_id',
-    'author_id',
-    'title',
-    'slug',
-    'content',
-    'status',
-    'published_at',
+    "knowledge_category_id",
+    "author_id",
+    "title",
+    "slug",
+    "content",
+    "status",
+    "published_at",
 ])]
 class KnowledgeArticle extends Model
 {
@@ -30,9 +31,9 @@ class KnowledgeArticle extends Model
     protected function casts(): array
     {
         return [
-            'status' => KnowledgeArticleStatus::class,
-            'published_at' => 'datetime',
-            'slug' => SlugCast::class,
+            "status" => KnowledgeArticleStatus::class,
+            "published_at" => "datetime",
+            "slug" => SlugCast::class,
         ];
     }
 
@@ -50,11 +51,11 @@ class KnowledgeArticle extends Model
         }
 
         if ($this->status !== KnowledgeArticleStatus::Draft) {
-            throw new DomainException('Only draft articles can be published.');
+            throw new DomainException("Only draft articles can be published.");
         }
         $this->update([
-            'status' => KnowledgeArticleStatus::Published,
-            'published_at' => now(),
+            "status" => KnowledgeArticleStatus::Published,
+            "published_at" => now(),
         ]);
 
         KnowledgeArticlePublished::dispatch($this->id);
@@ -75,12 +76,12 @@ class KnowledgeArticle extends Model
 
         if ($this->status !== KnowledgeArticleStatus::Published) {
             throw new DomainException(
-                'Only published articles can be unpublished.',
+                "Only published articles can be unpublished.",
             );
         }
         $this->update([
-            'status' => KnowledgeArticleStatus::Draft,
-            'published_at' => null,
+            "status" => KnowledgeArticleStatus::Draft,
+            "published_at" => null,
         ]);
 
         KnowledgeArticleUnpublished::dispatch($this->id);
@@ -96,7 +97,7 @@ class KnowledgeArticle extends Model
         if ($this->status === KnowledgeArticleStatus::Archived) {
             return;
         }
-        $this->update(['status' => KnowledgeArticleStatus::Archived]);
+        $this->update(["status" => KnowledgeArticleStatus::Archived]);
 
         KnowledgeArticleArchived::dispatch($this->id);
     }
@@ -110,10 +111,10 @@ class KnowledgeArticle extends Model
     {
         if ($this->status !== KnowledgeArticleStatus::Archived) {
             throw new DomainException(
-                'Only archived articles can be restored.',
+                "Only archived articles can be restored.",
             );
         }
-        $this->update(['status' => KnowledgeArticleStatus::Draft]);
+        $this->update(["status" => KnowledgeArticleStatus::Draft]);
 
         KnowledgeArticleRestored::dispatch($this->id);
     }
@@ -135,7 +136,7 @@ class KnowledgeArticle extends Model
         }
 
         $this->update([
-            'knowledge_category_id' => $category->id,
+            "knowledge_category_id" => $category->id,
         ]);
     }
 
@@ -143,12 +144,17 @@ class KnowledgeArticle extends Model
     {
         return $this->belongsTo(
             KnowledgeCategory::class,
-            'knowledge_category_id',
+            "knowledge_category_id",
         );
     }
 
     public function author(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'author_id');
+        return $this->belongsTo(User::class, "author_id");
+    }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, "attachable");
     }
 }
