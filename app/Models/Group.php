@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\Domain\InvalidGroupMemberException;
 use Database\Factories\GroupFactory;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'description'])]
+#[Fillable(["name", "description"])]
 class Group extends Model
 {
     /** @use HasFactory<GroupFactory> */
@@ -18,9 +19,9 @@ class Group extends Model
 
     public function addUser(User $user): void
     {
-        if (! $user->canBeAssignedTickets()) {
-            throw new DomainException(
-                'Only agents and administrators can join groups.',
+        if (!$user->canBeAssignedTickets()) {
+            throw new InvalidGroupMemberException(
+                "Only agents and administrators can join groups.",
             );
         }
 
@@ -31,11 +32,11 @@ class Group extends Model
     {
         $member = $this->users()->whereKey($user->id)->exists();
 
-        if (! $member) {
+        if (!$member) {
             return;
         }
 
-        $tickets = $this->tickets()->where('assigned_id', $user->id)->get();
+        $tickets = $this->tickets()->where("assigned_id", $user->id)->get();
 
         foreach ($tickets as $ticket) {
             $ticket->unassign();

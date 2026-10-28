@@ -2,9 +2,9 @@
 
 namespace App\Exceptions\Domain;
 
-use Exception;
+use DomainException;
 
-class InvalidGroupMemberException extends Exception
+class InvalidGroupMemberException extends DomainException
 {
     //
 }

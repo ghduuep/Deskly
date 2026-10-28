@@ -15,6 +15,9 @@ use App\Events\Ticket\TicketResumed;
 use App\Events\Ticket\TicketUnassigned;
 use App\Enum\MessageDirection;
 use App\Enum\MessageType;
+use App\Exceptions\Domain\InvalidMessageException;
+use App\Exceptions\Domain\InvalidTicketAssignmentException;
+use App\Exceptions\Domain\InvalidTicketStateException;
 use App\Models\Concerns\HasTags;
 use App\Enum\TicketPriority;
 use App\Enum\TicketStatus;
@@ -60,7 +63,7 @@ class Ticket extends Model
         }
 
         if ($this->status !== TicketStatus::Open) {
-            throw new DomainException(
+            throw new InvalidTicketStateException(
                 "Only open tickets can be marked as pending.",
             );
         }
@@ -84,7 +87,9 @@ class Ticket extends Model
         }
 
         if ($this->status !== TicketStatus::Pending) {
-            throw new DomainException("Only pending tickets can be resumed.");
+            throw new InvalidTicketStateException(
+                "Only pending tickets can be resumed.",
+            );
         }
 
         $this->update(["status" => TicketStatus::Open]);
@@ -106,7 +111,9 @@ class Ticket extends Model
         }
 
         if ($this->status === TicketStatus::Closed) {
-            throw new DomainException("Cannot resolve a closed ticket.");
+            throw new InvalidTicketStateException(
+                "Cannot resolve a closed ticket.",
+            );
         }
         $this->update(["status" => TicketStatus::Resolved]);
 
@@ -127,7 +134,9 @@ class Ticket extends Model
         }
 
         if ($this->status !== TicketStatus::Resolved) {
-            throw new DomainException("Only resolved tickets can be closed.");
+            throw new InvalidTicketStateException(
+                "Only resolved tickets can be closed.",
+            );
         }
         $this->update(["status" => TicketStatus::Closed]);
 
@@ -154,7 +163,9 @@ class Ticket extends Model
                 true,
             )
         ) {
-            throw new DomainException("This ticket cannot be reopened.");
+            throw new InvalidTicketStateException(
+                "This ticket cannot be reopened.",
+            );
         }
         $this->update(["status" => TicketStatus::Open]);
 
@@ -195,15 +206,19 @@ class Ticket extends Model
         $agent = User::query()->findOrFail($user->id);
 
         if ($this->group_id === null) {
-            throw new DomainException("Assign the ticket to a group first.");
+            throw new InvalidTicketAssignmentException(
+                "Assign the ticket to a group first.",
+            );
         }
 
         if (!$agent->canBeAssignedTickets()) {
-            throw new DomainException("This user cannot be assigned tickets.");
+            throw new InvalidTicketAssignmentException(
+                "This user cannot be assigned tickets.",
+            );
         }
 
         if (!$this->group->hasUser($agent)) {
-            throw new DomainException(
+            throw new InvalidTicketAssignmentException(
                 "The agent must belong to the ticket group.",
             );
         }
@@ -268,12 +283,16 @@ class Ticket extends Model
         Channel $channel,
     ): Message {
         if ($this->status === TicketStatus::Closed) {
-            throw new DomainException("Cannot reply to a closed ticket.");
+            throw new InvalidMessageException(
+                "Cannot reply to a closed ticket.",
+            );
         }
 
         if ($this->status === TicketStatus::Resolved) {
             if ($direction === MessageDirection::Outbound) {
-                throw new DomainException("Reopen the ticket before replying.");
+                throw new InvalidMessageException(
+                    "Reopen the ticket before replying.",
+                );
             }
         }
 
@@ -281,7 +300,7 @@ class Ticket extends Model
             $direction === MessageDirection::Inbound &&
             !$this->requester->is($author)
         ) {
-            throw new DomainException(
+            throw new InvalidMessageException(
                 "Only the ticket requester can send inbound messages.",
             );
         }
@@ -290,7 +309,7 @@ class Ticket extends Model
             $direction === MessageDirection::Outbound &&
             !$author->user?->canBeAssignedTickets()
         ) {
-            throw new DomainException(
+            throw new InvalidMessageException(
                 "Only agents and administrators can send outbound messages.",
             );
         }
@@ -321,7 +340,7 @@ class Ticket extends Model
     public function addInternalNote(Contact $author, string $content): Message
     {
         if ($this->status === TicketStatus::Closed) {
-            throw new DomainException(
+            throw new InvalidMessageException(
                 "Cannot add internal notes to a closed ticket.",
             );
         }
@@ -329,13 +348,13 @@ class Ticket extends Model
         $user = $author->user;
 
         if (!$user?->canBeAssignedTickets()) {
-            throw new DomainException(
+            throw new InvalidMessageException(
                 "Only agents and administrators can add internal notes.",
             );
         }
 
         if ($user->role !== UserRole::Admin && !$this->group?->hasUser($user)) {
-            throw new DomainException(
+            throw new InvalidMessageException(
                 "The agent must belong to the ticket group.",
             );
         }

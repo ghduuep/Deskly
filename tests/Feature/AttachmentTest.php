@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Domain\InvalidAttachmentException;
 use App\Models\Attachment;
 use App\Models\Message;
 use App\Models\KnowledgeArticle;
@@ -23,7 +24,7 @@ it("cannot attach a file twice", function () {
 
     $attachment->attachTo($message);
     $attachment->attachTo($message);
-})->throws(DomainException::class);
+})->throws(InvalidAttachmentException::class);
 
 it("can attach a file to a knowledge article", function () {
     $article = KnowledgeArticle::factory()->create();

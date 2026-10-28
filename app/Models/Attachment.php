@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\Domain\InvalidAttachmentException;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,13 +26,15 @@ class Attachment extends Model
     public function attachTo(Model $owner): void
     {
         if ($this->attachable_type !== null) {
-            throw new DomainException(
+            throw new InvalidAttachmentException(
                 "Attachment already belongs to an entity.",
             );
         }
 
         if (!$owner->exists) {
-            throw new DomainException("Attachment owner must be persisted.");
+            throw new InvalidAttachmentException(
+                "Attachment owner must be persisted.",
+            );
         }
 
         if (
@@ -41,7 +44,9 @@ class Attachment extends Model
                 true,
             )
         ) {
-            throw new DomainException("Unsupported attachment owner.");
+            throw new InvalidAttachmentException(
+                "Unsupported attachment owner.",
+            );
         }
 
         if ($owner instanceof Draft) {
@@ -49,7 +54,7 @@ class Attachment extends Model
                 $this->uploaded_by_id === null ||
                 $this->uploaded_by_id !== $owner->user_id
             ) {
-                throw new DomainException(
+                throw new InvalidAttachmentException(
                     "Attachment uploader must own the draft.",
                 );
             }
@@ -65,13 +70,13 @@ class Attachment extends Model
             $this->attachable_type !== $draft->getMorphClass() ||
             $this->attachable_id !== $draft->id
         ) {
-            throw new DomainException(
+            throw new InvalidAttachmentException(
                 "Attachment does not belong to this draft.",
             );
         }
 
         if ($message->ticket_id !== $draft->ticket_id) {
-            throw new DomainException(
+            throw new InvalidAttachmentException(
                 "Message and draft must belong to the same ticket.",
             );
         }

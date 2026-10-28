@@ -2,9 +2,9 @@
 
 namespace App\Exceptions\Domain;
 
-use Exception;
+use DomainException;
 
-class InvalidDraftException extends Exception
+class InvalidDraftException extends DomainException
 {
     //
 }

@@ -14,6 +14,9 @@ use App\Events\Ticket\TicketPriorityChanged;
 use App\Events\Ticket\TicketReopened;
 use App\Events\Ticket\TicketResolved;
 use App\Events\Ticket\TicketUnassigned;
+use App\Exceptions\Domain\InvalidMessageException;
+use App\Exceptions\Domain\InvalidTicketAssignmentException;
+use App\Exceptions\Domain\InvalidTicketStateException;
 use App\Models\Channel;
 use App\Models\Contact;
 use App\Models\Group;
@@ -157,7 +160,7 @@ it("rejects inbound replies from other contacts", function () {
             MessageDirection::Inbound,
             $channel,
         ),
-    )->toThrow(DomainException::class);
+    )->toThrow(InvalidMessageException::class);
 
     expect($ticket->messages()->count())->toBe(0);
 });
@@ -182,7 +185,7 @@ it("rejects outbound replies from customers", function () {
             MessageDirection::Outbound,
             $channel,
         ),
-    )->toThrow(DomainException::class);
+    )->toThrow(InvalidMessageException::class);
 
     expect($ticket->messages()->count())->toBe(0);
 });
@@ -225,7 +228,7 @@ it("rejects internal notes from customers", function () {
     $ticket = Ticket::factory()->create();
 
     expect(fn() => $ticket->addInternalNote($contact, "Note"))->toThrow(
-        DomainException::class,
+        InvalidMessageException::class,
     );
 
     expect($ticket->messages()->count())->toBe(0);
@@ -247,7 +250,7 @@ it("rejects internal notes from agents outside the ticket group", function () {
     ]);
 
     expect(fn() => $ticket->addInternalNote($contact, "Note"))->toThrow(
-        DomainException::class,
+        InvalidMessageException::class,
     );
 
     expect($ticket->messages()->count())->toBe(0);
@@ -276,7 +279,7 @@ it("should not resume not pending tickets", function (TicketStatus $status) {
         "status" => $status,
     ]);
 
-    expect(fn() => $ticket->resume())->toThrow(DomainException::class);
+    expect(fn() => $ticket->resume())->toThrow(InvalidTicketStateException::class);
 })->with([
     "closed tickets should not be resumed" => [TicketStatus::Closed],
     "resolved tickets should not be resumed" => [TicketStatus::Resolved],
@@ -287,7 +290,7 @@ it("should not reopen pending tickets", function () {
         "status" => TicketStatus::Pending,
     ]);
 
-    expect(fn() => $ticket->reopen())->toThrow(DomainException::class);
+    expect(fn() => $ticket->reopen())->toThrow(InvalidTicketStateException::class);
 });
 
 it("should not mark as pending not open tickets", function (
@@ -297,7 +300,7 @@ it("should not mark as pending not open tickets", function (
         "status" => $status,
     ]);
 
-    expect(fn() => $ticket->pend())->toThrow(DomainException::class);
+    expect(fn() => $ticket->pend())->toThrow(InvalidTicketStateException::class);
 })->with([
     "resolved tickets cannot be pending" => [TicketStatus::Resolved],
     "closed tickets cannot be pending" => [TicketStatus::Closed],
@@ -316,7 +319,7 @@ it(
         Event::fake([TicketAssigned::class]);
 
         expect(fn() => $ticket->assignTo($agent))->toThrow(
-            DomainException::class,
+            InvalidTicketAssignmentException::class,
         );
 
         expect($ticket->fresh()->assigned_id)->toBeNull();
@@ -329,7 +332,7 @@ it("should not resolve a closed ticket", function () {
         "status" => TicketStatus::Closed,
     ]);
 
-    expect(fn() => $ticket->resolve())->toThrow(DomainException::class);
+    expect(fn() => $ticket->resolve())->toThrow(InvalidTicketStateException::class);
 });
 
 it("should not close a non resolved ticket", function (TicketStatus $status) {
@@ -337,7 +340,7 @@ it("should not close a non resolved ticket", function (TicketStatus $status) {
         "status" => $status,
     ]);
 
-    expect(fn() => $ticket->close())->toThrow(DomainException::class);
+    expect(fn() => $ticket->close())->toThrow(InvalidTicketStateException::class);
 })->with([
     "open tickets cannot be closed" => [TicketStatus::Open],
     "pending tickets cannot be closed" => [TicketStatus::Pending],
@@ -355,7 +358,7 @@ it("should not assign a ticket to a customer", function () {
     $ticket = Ticket::factory()->create();
     $user = User::factory()->create();
 
-    expect(fn() => $ticket->assignTo($user))->toThrow(DomainException::class);
+    expect(fn() => $ticket->assignTo($user))->toThrow(InvalidTicketAssignmentException::class);
 });
 
 it("dispatches an event when a ticket is assigned", function () {

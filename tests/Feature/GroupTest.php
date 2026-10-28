@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Domain\InvalidGroupMemberException;
 use App\Models\Group;
 use App\Models\Ticket;
 use App\Models\User;
@@ -51,7 +52,9 @@ it("does not allow customer to join groups", function () {
 
     $customer = User::factory()->create();
 
-    expect(fn() => $group->addUser($customer))->toThrow(DomainException::class);
+    expect(fn() => $group->addUser($customer))->toThrow(
+        InvalidGroupMemberException::class,
+    );
 
     expect($group->users()->count())->toBe(0);
 });

@@ -8,6 +8,7 @@ use App\Events\KnowledgeArticle\KnowledgeArticlePublished;
 use App\Events\KnowledgeArticle\KnowledgeArticleRestored;
 use App\Events\KnowledgeArticle\KnowledgeArticleUnpublished;
 use App\Enum\KnowledgeArticleStatus;
+use App\Exceptions\Domain\InvalidArticleStateException;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -51,7 +52,9 @@ class KnowledgeArticle extends Model
         }
 
         if ($this->status !== KnowledgeArticleStatus::Draft) {
-            throw new DomainException("Only draft articles can be published.");
+            throw new InvalidArticleStateException(
+                "Only draft articles can be published.",
+            );
         }
         $this->update([
             "status" => KnowledgeArticleStatus::Published,
@@ -75,7 +78,7 @@ class KnowledgeArticle extends Model
         }
 
         if ($this->status !== KnowledgeArticleStatus::Published) {
-            throw new DomainException(
+            throw new InvalidArticleStateException(
                 "Only published articles can be unpublished.",
             );
         }
@@ -110,7 +113,7 @@ class KnowledgeArticle extends Model
     public function restore(): void
     {
         if ($this->status !== KnowledgeArticleStatus::Archived) {
-            throw new DomainException(
+            throw new InvalidArticleStateException(
                 "Only archived articles can be restored.",
             );
         }

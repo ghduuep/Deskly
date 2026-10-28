@@ -2,9 +2,9 @@
 
 namespace App\Exceptions\Domain;
 
-use Exception;
+use DomainException;
 
-class InvalidAttachmentException extends Exception
+class InvalidAttachmentException extends DomainException
 {
     //
 }

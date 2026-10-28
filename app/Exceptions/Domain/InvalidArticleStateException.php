@@ -2,9 +2,9 @@
 
 namespace App\Exceptions\Domain;
 
-use Exception;
+use DomainException;
 
-class InvalidArticleStateException extends Exception
+class InvalidArticleStateException extends DomainException
 {
     //
 }

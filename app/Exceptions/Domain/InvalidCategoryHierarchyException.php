@@ -2,9 +2,9 @@
 
 namespace App\Exceptions\Domain;
 
-use Exception;
+use DomainException;
 
-class InvalidCategoryHierarchyException extends Exception
+class InvalidCategoryHierarchyException extends DomainException
 {
     //
 }

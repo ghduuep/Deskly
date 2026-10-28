@@ -2,9 +2,9 @@
 
 namespace App\Exceptions\Domain;
 
-use Exception;
+use DomainException;
 
-class InvalidMessageException extends Exception
+class InvalidMessageException extends DomainException
 {
     //
 }

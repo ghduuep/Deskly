@@ -2,9 +2,9 @@
 
 namespace App\Exceptions\Domain;
 
-use Exception;
+use DomainException;
 
-class InvalidTicketAssignmentException extends Exception
+class InvalidTicketAssignmentException extends DomainException
 {
     //
 }

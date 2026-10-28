@@ -1,6 +1,7 @@
 <?php
 
 use App\Enum\KnowledgeArticleStatus;
+use App\Exceptions\Domain\InvalidArticleStateException;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeCategory;
 
@@ -65,7 +66,7 @@ it("should not unpublished not published articles", function () {
         "status" => KnowledgeArticleStatus::Archived,
     ]);
 
-    expect(fn() => $article->unpublish())->toThrow(DomainException::class);
+    expect(fn() => $article->unpublish())->toThrow(InvalidArticleStateException::class);
 });
 
 it("should not restore not archived articles", function (
@@ -75,7 +76,7 @@ it("should not restore not archived articles", function (
         "status" => $status,
     ]);
 
-    expect(fn() => $article->restore())->toThrow(DomainException::class);
+    expect(fn() => $article->restore())->toThrow(InvalidArticleStateException::class);
 })->with([
     "draft articles cannot be restored" => [KnowledgeArticleStatus::Draft],
     "published articles cannot be restored" => [
