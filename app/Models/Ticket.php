@@ -54,7 +54,7 @@ class Ticket extends Model
      *
      * Does nothing if the ticket is already pending.
      *
-     * @throws
+     * @throws InvalidTicketStateException If the ticket is not open.
      */
     public function pend(): void
     {
@@ -78,7 +78,7 @@ class Ticket extends Model
      *
      * Does nothing if the ticket is already open.
      *
-     * @throws DomainException If the ticket cannot be resumed.
+     * @throws InvalidTicketStateException If the ticket cannot be resumed.
      */
     public function resume(): void
     {
@@ -102,7 +102,7 @@ class Ticket extends Model
      *
      * Does nothing if the ticket is already resolved.
      *
-     * @throws DomainException If the ticket is closed.
+     * @throws InvalidTicketStateException If the ticket is closed.
      */
     public function resolve(): void
     {
@@ -125,7 +125,7 @@ class Ticket extends Model
      *
      * Does nothing if the ticket is already closed.
      *
-     * @throws DomainException If the ticket is not resolved.
+     * @throws InvalidTicketStateException If the ticket is not resolved.
      */
     public function close(): void
     {
@@ -148,7 +148,7 @@ class Ticket extends Model
      *
      * Does nothing if the ticket is already open.
      *
-     * @throws DomainException If the ticket cannot be reopened.
+     * @throws InvalidTicketStateException If the ticket cannot be reopened.
      */
     public function reopen(): void
     {
@@ -199,7 +199,7 @@ class Ticket extends Model
      *
      * Does nothing if the user is already assigned.
      *
-     * @throws DomainException If the user cannot be assigned tickets.
+     * @throws InvalidTicketAssignmentException If the user cannot be assigned tickets.
      */
     public function assignTo(User $user): void
     {
