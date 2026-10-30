@@ -8,3 +8,28 @@ services:
             MYSQL_DATABASE: deskly
         ports:
             - "3306:3306"
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+            interval: 5s
+            retries: 20
+
+    app:
+        build: ./docker/php
+        container_name: deskly_app
+        working_dir: /var/www/html
+        volumes:
+            - .:/var/www/html
+            # Keep vendor on a Linux volume: reading it through the host
+            # bind mount makes every request slow on Windows and macOS.
+            - vendor:/var/www/html/vendor
+        environment:
+            DB_HOST: db
+            DB_PASSWORD: root
+        ports:
+            - "8000:8000"
+        depends_on:
+            db:
+                condition: service_healthy
+
+volumes:
+    vendor:

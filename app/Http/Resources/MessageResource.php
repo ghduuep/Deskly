@@ -17,7 +17,8 @@ class MessageResource extends JsonResource
         return [
             'id' => $this->id,
             'content' => $this->content,
-            'is_internal' => $this->is_internal,
+            'is_internal' => $this->isInternal(),
+            'direction' => $this->direction,
             'author' => new ContactResource($this->whenLoaded('author')),
             'created_at' => $this->created_at?->toISOString(),
         ];

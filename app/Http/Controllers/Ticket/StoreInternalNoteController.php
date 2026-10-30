@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Ticket;
 
+use App\Actions\Ticket\AddInternalNote;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ticket\StoreInternalNoteRequest;
 use App\Http\Resources\MessageResource;
@@ -17,13 +18,12 @@ class StoreInternalNoteController extends Controller
     public function __invoke(
         StoreInternalNoteRequest $request,
         Ticket $ticket,
+        AddInternalNote $addInternalNote,
     ): JsonResponse {
-        $contact = $request->user()->contact()->firstOrFail();
-
-        $message = $ticket->addMessage(
-            $contact,
+        $message = $addInternalNote->handle(
+            $ticket,
+            $request->user()->contact()->firstOrFail(),
             $request->validated('content'),
-            isInternal: true,
         );
 
         return new MessageResource($message->load('author'))
